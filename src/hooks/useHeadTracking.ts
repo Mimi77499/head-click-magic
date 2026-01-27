@@ -2,12 +2,15 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import * as Human from '@vladmandic/human';
 import { OneEuroFilter2D } from '@/lib/oneEuroFilter';
 
+export type ClickMethod = 'mouth' | 'blink' | 'both';
+
 export interface CalibrationData {
   centerYaw: number;
   centerPitch: number;
   sensitivityX: number;
   sensitivityY: number;
   mouthThreshold: number;
+  blinkThreshold: number;
 }
 
 export interface HeadTrackingState {
@@ -16,8 +19,10 @@ export interface HeadTrackingState {
   calibrationStep: number;
   cursorPosition: { x: number; y: number };
   isMouthOpen: boolean;
+  isBlinking: boolean;
   isTracking: boolean;
   error: string | null;
+  clickMethod: ClickMethod;
 }
 
 const defaultConfig: Partial<Human.Config> = {
@@ -27,7 +32,7 @@ const defaultConfig: Partial<Human.Config> = {
     enabled: true,
     detector: { rotation: false, maxDetected: 1 },
     mesh: { enabled: true },
-    iris: { enabled: false },
+    iris: { enabled: true }, // Enable iris for better eye tracking
     emotion: { enabled: false },
     description: { enabled: false },
   },
@@ -37,6 +42,20 @@ const defaultConfig: Partial<Human.Config> = {
   gesture: { enabled: false },
 };
 
+// Eye landmark indices for Human.js mesh (MediaPipe Face Mesh)
+const EYE_LANDMARKS = {
+  // Left eye (user's left, appears on right side of image)
+  leftUpper: [159, 158, 157, 173, 155],
+  leftLower: [145, 144, 153, 154, 155],
+  leftTop: 159,
+  leftBottom: 145,
+  // Right eye (user's right, appears on left side of image)
+  rightUpper: [386, 385, 384, 398, 382],
+  rightLower: [374, 373, 380, 381, 382],
+  rightTop: 386,
+  rightBottom: 374,
+};
+
 export function useHeadTracking() {
   const [state, setState] = useState<HeadTrackingState>({
     isInitialized: false,
@@ -44,8 +63,10 @@ export function useHeadTracking() {
     calibrationStep: 0,
     cursorPosition: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
     isMouthOpen: false,
+    isBlinking: false,
     isTracking: false,
     error: null,
+    clickMethod: 'both',
   });
 
   const humanRef = useRef<Human.Human | null>(null);
@@ -58,14 +79,27 @@ export function useHeadTracking() {
     sensitivityX: 400,
     sensitivityY: 300,
     mouthThreshold: 0.35,
+    blinkThreshold: 0.2,
   });
   const lastClickRef = useRef<number>(0);
   const mouthWasOpenRef = useRef<boolean>(false);
-  const calibrationSamplesRef = useRef<{ yaw: number[]; pitch: number[]; mouth: number[] }>({
+  const eyesWereClosedRef = useRef<boolean>(false);
+  const blinkStartTimeRef = useRef<number>(0);
+  const calibrationSamplesRef = useRef<{ 
+    yaw: number[]; 
+    pitch: number[]; 
+    mouth: number[];
+    eyeOpenness: number[];
+  }>({
     yaw: [],
     pitch: [],
     mouth: [],
+    eyeOpenness: [],
   });
+
+  const setClickMethod = useCallback((method: ClickMethod) => {
+    setState(prev => ({ ...prev, clickMethod: method }));
+  }, []);
 
   const initialize = useCallback(async () => {
     try {
@@ -109,7 +143,7 @@ export function useHeadTracking() {
   }, []);
 
   const startCalibration = useCallback(() => {
-    calibrationSamplesRef.current = { yaw: [], pitch: [], mouth: [] };
+    calibrationSamplesRef.current = { yaw: [], pitch: [], mouth: [], eyeOpenness: [] };
     setState(prev => ({ ...prev, isCalibrating: true, calibrationStep: 1 }));
   }, []);
 
@@ -124,7 +158,12 @@ export function useHeadTracking() {
           calibrationRef.current.centerYaw = samples.yaw.reduce((a, b) => a + b, 0) / samples.yaw.length;
           calibrationRef.current.centerPitch = samples.pitch.reduce((a, b) => a + b, 0) / samples.pitch.length;
         }
-        calibrationSamplesRef.current = { yaw: [], pitch: [], mouth: [] };
+        // Also calculate baseline eye openness
+        if (samples.eyeOpenness.length > 0) {
+          const avgOpenness = samples.eyeOpenness.reduce((a, b) => a + b, 0) / samples.eyeOpenness.length;
+          calibrationRef.current.blinkThreshold = avgOpenness * 0.4; // 40% of normal openness = blink
+        }
+        calibrationSamplesRef.current = { yaw: [], pitch: [], mouth: [], eyeOpenness: [] };
       } else if (prev.calibrationStep === 2) {
         // Save mouth threshold
         const samples = calibrationSamplesRef.current.mouth;
@@ -132,7 +171,7 @@ export function useHeadTracking() {
           const maxMouth = Math.max(...samples);
           calibrationRef.current.mouthThreshold = maxMouth * 0.7;
         }
-        calibrationSamplesRef.current = { yaw: [], pitch: [], mouth: [] };
+        calibrationSamplesRef.current = { yaw: [], pitch: [], mouth: [], eyeOpenness: [] };
       } else if (nextStep > 2) {
         filterRef.current.reset();
         return { ...prev, isCalibrating: false, calibrationStep: 0 };
@@ -159,6 +198,73 @@ export function useHeadTracking() {
     return mouthWidth > 0 ? mouthHeight / mouthWidth : 0;
   }, []);
 
+  const calculateEyeOpenness = useCallback((face: Human.FaceResult): number => {
+    if (!face.mesh || face.mesh.length < 400) return 1; // Default to open if not enough landmarks
+    
+    // Calculate average eye openness for both eyes
+    const leftTop = face.mesh[EYE_LANDMARKS.leftTop];
+    const leftBottom = face.mesh[EYE_LANDMARKS.leftBottom];
+    const rightTop = face.mesh[EYE_LANDMARKS.rightTop];
+    const rightBottom = face.mesh[EYE_LANDMARKS.rightBottom];
+    
+    if (!leftTop || !leftBottom || !rightTop || !rightBottom) return 1;
+    
+    const leftEyeHeight = Math.abs(leftBottom[1] - leftTop[1]);
+    const rightEyeHeight = Math.abs(rightBottom[1] - rightTop[1]);
+    
+    // Average of both eyes
+    return (leftEyeHeight + rightEyeHeight) / 2;
+  }, []);
+
+  const detectBlink = useCallback((eyeOpenness: number, threshold: number): boolean => {
+    const isClosed = eyeOpenness < threshold;
+    const now = Date.now();
+    
+    if (isClosed && !eyesWereClosedRef.current) {
+      // Eyes just closed
+      blinkStartTimeRef.current = now;
+      eyesWereClosedRef.current = true;
+    } else if (!isClosed && eyesWereClosedRef.current) {
+      // Eyes just opened - check if it was a valid blink
+      const blinkDuration = now - blinkStartTimeRef.current;
+      eyesWereClosedRef.current = false;
+      
+      // A blink should be between 100ms and 400ms
+      if (blinkDuration >= 100 && blinkDuration <= 400) {
+        return true;
+      }
+    }
+    
+    return false;
+  }, []);
+
+  const triggerClick = useCallback((x: number, y: number, type: 'mouth' | 'blink') => {
+    const now = Date.now();
+    if (now - lastClickRef.current > 800) {
+      lastClickRef.current = now;
+      
+      setState(prev => ({ 
+        ...prev, 
+        isMouthOpen: type === 'mouth',
+        isBlinking: type === 'blink',
+      }));
+      
+      // Trigger click on element under cursor
+      const element = document.elementFromPoint(x, y);
+      if (element instanceof HTMLElement) {
+        element.click();
+      }
+      
+      setTimeout(() => {
+        setState(prev => ({ 
+          ...prev, 
+          isMouthOpen: false,
+          isBlinking: false,
+        }));
+      }, 200);
+    }
+  }, []);
+
   const startTracking = useCallback(() => {
     if (!humanRef.current || !videoRef.current) return;
 
@@ -178,10 +284,14 @@ export function useHeadTracking() {
             const yaw = (rotation.angle?.yaw ?? 0) * (180 / Math.PI);
             const pitch = (rotation.angle?.pitch ?? 0) * (180 / Math.PI);
             
+            // Calculate eye openness
+            const eyeOpenness = calculateEyeOpenness(face);
+            
             // During calibration, collect samples
             if (state.isCalibrating) {
               calibrationSamplesRef.current.yaw.push(yaw);
               calibrationSamplesRef.current.pitch.push(pitch);
+              calibrationSamplesRef.current.eyeOpenness.push(eyeOpenness);
               
               const mouthRatio = calculateMouthOpenRatio(face);
               calibrationSamplesRef.current.mouth.push(mouthRatio);
@@ -203,29 +313,27 @@ export function useHeadTracking() {
                 cursorPosition: { x: filtered.x, y: filtered.y },
               }));
               
-              // Check mouth open
-              const mouthRatio = calculateMouthOpenRatio(face);
-              const isMouthOpen = mouthRatio > cal.mouthThreshold;
+              const currentClickMethod = state.clickMethod;
               
-              if (isMouthOpen && !mouthWasOpenRef.current) {
-                const now = Date.now();
-                if (now - lastClickRef.current > 800) {
-                  lastClickRef.current = now;
-                  setState(prev => ({ ...prev, isMouthOpen: true }));
-                  
-                  // Trigger click on element under cursor
-                  const element = document.elementFromPoint(filtered.x, filtered.y);
-                  if (element instanceof HTMLElement) {
-                    element.click();
-                  }
-                  
-                  setTimeout(() => {
-                    setState(prev => ({ ...prev, isMouthOpen: false }));
-                  }, 200);
+              // Check mouth open (if enabled)
+              if (currentClickMethod === 'mouth' || currentClickMethod === 'both') {
+                const mouthRatio = calculateMouthOpenRatio(face);
+                const isMouthOpen = mouthRatio > cal.mouthThreshold;
+                
+                if (isMouthOpen && !mouthWasOpenRef.current) {
+                  triggerClick(filtered.x, filtered.y, 'mouth');
                 }
+                
+                mouthWasOpenRef.current = isMouthOpen;
               }
               
-              mouthWasOpenRef.current = isMouthOpen;
+              // Check blink (if enabled)
+              if (currentClickMethod === 'blink' || currentClickMethod === 'both') {
+                const didBlink = detectBlink(eyeOpenness, cal.blinkThreshold);
+                if (didBlink) {
+                  triggerClick(filtered.x, filtered.y, 'blink');
+                }
+              }
             }
           }
         }
@@ -237,7 +345,7 @@ export function useHeadTracking() {
     };
 
     detect();
-  }, [state.isInitialized, state.isCalibrating, calculateMouthOpenRatio]);
+  }, [state.isInitialized, state.isCalibrating, state.clickMethod, calculateMouthOpenRatio, calculateEyeOpenness, detectBlink, triggerClick]);
 
   const stopTracking = useCallback(() => {
     if (animationRef.current) {
@@ -273,5 +381,6 @@ export function useHeadTracking() {
     startTracking,
     stopTracking,
     cleanup,
+    setClickMethod,
   };
 }
