@@ -85,6 +85,8 @@ export function useHeadTracking() {
   const mouthWasOpenRef = useRef<boolean>(false);
   const eyesWereClosedRef = useRef<boolean>(false);
   const blinkStartTimeRef = useRef<number>(0);
+  const isCalibratingRef = useRef<boolean>(false);
+  const clickMethodRef = useRef<ClickMethod>('both');
   const calibrationSamplesRef = useRef<{ 
     yaw: number[]; 
     pitch: number[]; 
@@ -98,6 +100,7 @@ export function useHeadTracking() {
   });
 
   const setClickMethod = useCallback((method: ClickMethod) => {
+    clickMethodRef.current = method;
     setState(prev => ({ ...prev, clickMethod: method }));
   }, []);
 
@@ -144,6 +147,7 @@ export function useHeadTracking() {
 
   const startCalibration = useCallback(() => {
     calibrationSamplesRef.current = { yaw: [], pitch: [], mouth: [], eyeOpenness: [] };
+    isCalibratingRef.current = true;
     setState(prev => ({ ...prev, isCalibrating: true, calibrationStep: 1 }));
   }, []);
 
@@ -174,6 +178,7 @@ export function useHeadTracking() {
         calibrationSamplesRef.current = { yaw: [], pitch: [], mouth: [], eyeOpenness: [] };
       } else if (nextStep > 2) {
         filterRef.current.reset();
+        isCalibratingRef.current = false;
         return { ...prev, isCalibrating: false, calibrationStep: 0 };
       }
       
@@ -271,7 +276,7 @@ export function useHeadTracking() {
     setState(prev => ({ ...prev, isTracking: true }));
 
     const detect = async () => {
-      if (!humanRef.current || !videoRef.current || !state.isInitialized) return;
+      if (!humanRef.current || !videoRef.current) return;
 
       try {
         const result = await humanRef.current.detect(videoRef.current);
@@ -288,7 +293,7 @@ export function useHeadTracking() {
             const eyeOpenness = calculateEyeOpenness(face);
             
             // During calibration, collect samples
-            if (state.isCalibrating) {
+            if (isCalibratingRef.current) {
               calibrationSamplesRef.current.yaw.push(yaw);
               calibrationSamplesRef.current.pitch.push(pitch);
               calibrationSamplesRef.current.eyeOpenness.push(eyeOpenness);
@@ -296,7 +301,7 @@ export function useHeadTracking() {
               const mouthRatio = calculateMouthOpenRatio(face);
               calibrationSamplesRef.current.mouth.push(mouthRatio);
             } else {
-              // Normal tracking
+              // Normal tracking - MOVE CURSOR
               const cal = calibrationRef.current;
               const rawX = window.innerWidth / 2 + (yaw - cal.centerYaw) * cal.sensitivityX;
               const rawY = window.innerHeight / 2 + (pitch - cal.centerPitch) * cal.sensitivityY;
@@ -313,7 +318,7 @@ export function useHeadTracking() {
                 cursorPosition: { x: filtered.x, y: filtered.y },
               }));
               
-              const currentClickMethod = state.clickMethod;
+              const currentClickMethod = clickMethodRef.current;
               
               // Check mouth open (if enabled)
               if (currentClickMethod === 'mouth' || currentClickMethod === 'both') {
@@ -345,7 +350,7 @@ export function useHeadTracking() {
     };
 
     detect();
-  }, [state.isInitialized, state.isCalibrating, state.clickMethod, calculateMouthOpenRatio, calculateEyeOpenness, detectBlink, triggerClick]);
+  }, [calculateMouthOpenRatio, calculateEyeOpenness, detectBlink, triggerClick]);
 
   const stopTracking = useCallback(() => {
     if (animationRef.current) {
