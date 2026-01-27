@@ -124,7 +124,11 @@ export function useHeadTracking() {
       video.autoplay = true;
       video.playsInline = true;
       video.muted = true;
-      video.style.display = 'none';
+      // Keep video accessible but hidden from normal flow
+      video.style.position = 'fixed';
+      video.style.opacity = '0';
+      video.style.pointerEvents = 'none';
+      video.style.zIndex = '-1';
       document.body.appendChild(video);
       videoRef.current = video;
 
@@ -143,6 +147,10 @@ export function useHeadTracking() {
         error: err instanceof Error ? err.message : 'Failed to initialize camera' 
       }));
     }
+  }, []);
+
+  const getVideoElement = useCallback((): HTMLVideoElement | null => {
+    return videoRef.current;
   }, []);
 
   const startCalibration = useCallback(() => {
@@ -387,5 +395,6 @@ export function useHeadTracking() {
     stopTracking,
     cleanup,
     setClickMethod,
+    getVideoElement,
   };
 }
