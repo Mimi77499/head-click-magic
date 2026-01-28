@@ -1,11 +1,4 @@
-import { useState } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Check } from 'lucide-react';
 
 export interface Tone {
   id: string;
@@ -29,51 +22,30 @@ interface ToneSelectorProps {
 }
 
 export function ToneSelector({ selectedTone, onToneChange }: ToneSelectorProps) {
-  const [open, setOpen] = useState(false);
-  const currentTone = tones.find(t => t.id === selectedTone) || tones[0];
-
-  const handleSelect = (toneId: string) => {
-    onToneChange(toneId);
-    setOpen(false);
-  };
-
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="rounded-full gap-2 px-4"
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-muted-foreground px-2 mb-2">Select Tone</p>
+      {tones.map(tone => (
+        <button
+          key={tone.id}
+          onClick={() => onToneChange(tone.id)}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+            selectedTone === tone.id 
+              ? 'bg-primary/15 text-primary' 
+              : 'hover:bg-muted'
+          }`}
         >
-          <span className="text-lg">{currentTone.icon}</span>
-          <span className="hidden sm:inline">{currentTone.name}</span>
-          <ChevronDown className="w-4 h-4 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-2" align="center">
-        <div className="space-y-1">
-          {tones.map(tone => (
-            <button
-              key={tone.id}
-              onClick={() => handleSelect(tone.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-colors ${
-                selectedTone === tone.id 
-                  ? 'bg-primary/15 text-primary' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              <span className="text-xl">{tone.icon}</span>
-              <div className="flex-1 text-left">
-                <p className="font-medium text-sm">{tone.name}</p>
-                <p className="text-xs text-muted-foreground">{tone.description}</p>
-              </div>
-              {selectedTone === tone.id && (
-                <Check className="w-4 h-4 text-primary" />
-              )}
-            </button>
-          ))}
-        </div>
-      </PopoverContent>
-    </Popover>
+          <span className="text-lg">{tone.icon}</span>
+          <div className="flex-1 text-left">
+            <p className="font-medium text-sm">{tone.name}</p>
+            <p className="text-xs text-muted-foreground">{tone.description}</p>
+          </div>
+          {selectedTone === tone.id && (
+            <Check className="w-4 h-4 text-primary" />
+          )}
+        </button>
+      ))}
+    </div>
   );
 }
 

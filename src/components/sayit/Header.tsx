@@ -1,66 +1,44 @@
-import { Settings, Clock, Eye } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Clock, Settings } from 'lucide-react';
 
 interface HeaderProps {
   onSettingsClick: () => void;
   onHistoryClick: () => void;
-  onHeadTrackingClick: () => void;
-  isHeadTrackingActive: boolean;
+  onHeadTrackingClick?: () => void;
+  isHeadTrackingActive?: boolean;
 }
 
 export function Header({ 
   onSettingsClick, 
-  onHistoryClick, 
-  onHeadTrackingClick,
-  isHeadTrackingActive 
+  onHistoryClick,
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-card border-b border-border">
+      <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-md">
-            <span className="text-xl">💬</span>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground text-sm font-bold">S</span>
           </div>
-          <div className="flex flex-col">
-            <h1 className="text-xl font-bold text-foreground tracking-tight">
-              SayIt
-            </h1>
-            <span className="text-xs text-muted-foreground -mt-1">
-              Communication Made Easy
-            </span>
-          </div>
+          <span className="text-lg font-bold text-foreground">SayIt</span>
+          <span className="text-primary font-bold">—</span>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onHeadTrackingClick}
-            className={`rounded-xl transition-colors ${isHeadTrackingActive ? 'bg-primary/10 text-primary' : ''}`}
-            title="Hands-free mode"
-          >
-            <Eye className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
+        <div className="flex items-center gap-1">
+          <button
             onClick={onHistoryClick}
-            className="rounded-xl"
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
             title="History"
           >
-            <Clock className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
+            <Clock className="w-5 h-5 text-muted-foreground" />
+          </button>
+          <button
             onClick={onSettingsClick}
-            className="rounded-xl"
+            className="p-2 rounded-lg hover:bg-muted transition-colors"
             title="Settings"
           >
-            <Settings className="w-5 h-5" />
-          </Button>
+            <Settings className="w-5 h-5 text-muted-foreground" />
+          </button>
         </div>
       </div>
     </header>

@@ -69,26 +69,27 @@ export function HistoryPanel({
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-md">
+      <SheetContent className="w-full sm:max-w-md" aria-describedby={undefined}>
         <SheetHeader>
-          <div className="flex items-center justify-between">
-            <SheetTitle className="text-xl font-bold flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              History
-            </SheetTitle>
-            {history.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClearHistory}
-                className="text-destructive hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Clear
-              </Button>
-            )}
-          </div>
+          <SheetTitle className="text-xl font-bold flex items-center gap-2">
+            <Clock className="w-5 h-5" />
+            History
+          </SheetTitle>
         </SheetHeader>
+        
+        {history.length > 0 && (
+          <div className="flex justify-end mt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClearHistory}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              Clear
+            </Button>
+          </div>
+        )}
 
         <ScrollArea className="h-[calc(100vh-120px)] mt-4">
           {history.length === 0 ? (
