@@ -81,12 +81,12 @@ export function useHeadTracking() {
   const humanRef = useRef<Human.Human | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const animationRef = useRef<number | null>(null);
-  const filterRef = useRef<OneEuroFilter2D>(new OneEuroFilter2D(0.5, 0.5, 1.0));
+  const filterRef = useRef<OneEuroFilter2D>(new OneEuroFilter2D(1.0, 0.01, 1.0)); // Adjusted for smoother, more responsive tracking
   const calibrationRef = useRef<CalibrationData>({
     centerYaw: 0,
     centerPitch: 0,
-    sensitivityX: 400,
-    sensitivityY: 300,
+    sensitivityX: 80, // Reduced for more accurate 1:1 movement
+    sensitivityY: 60,
     mouthThreshold: 0.35,
     blinkThreshold: 0.2,
   });
@@ -273,7 +273,7 @@ export function useHeadTracking() {
 
   const triggerClick = useCallback((x: number, y: number, type: 'mouth' | 'blink') => {
     const now = Date.now();
-    if (now - lastClickRef.current > 800) {
+    if (now - lastClickRef.current > 600) { // Reduced cooldown for better responsiveness
       lastClickRef.current = now;
       
       setState(prev => ({ 
@@ -282,24 +282,55 @@ export function useHeadTracking() {
         isBlinking: type === 'blink',
       }));
       
-      // Trigger click on element under cursor
-      const element = document.elementFromPoint(x, y);
-      if (element instanceof HTMLElement) {
-        // Check if it's a link or button for navigation
+      // Get all elements at this point, not just the topmost
+      const elements = document.elementsFromPoint(x, y);
+      
+      // Find the first clickable element (link or button)
+      let clicked = false;
+      for (const element of elements) {
+        if (!(element instanceof HTMLElement)) continue;
+        
+        // Skip our overlay elements
+        if (element.closest('.control-panel') || 
+            element.closest('.custom-cursor') ||
+            element.classList.contains('custom-cursor')) {
+          continue;
+        }
+        
         const linkElement = element.closest('a');
         const buttonElement = element.closest('button');
+        const clickableElement = element.closest('[role="button"]') || 
+                                 element.closest('[onclick]') ||
+                                 element.closest('input[type="submit"]');
         
-        if (linkElement && linkElement.href) {
-          // Handle link navigation
-          const href = linkElement.getAttribute('href');
-          if (href) {
-            // For internal links, use the router by clicking
-            linkElement.click();
-          }
+        if (linkElement) {
+          console.log('[HeadTracking] Clicking link:', linkElement.href);
+          linkElement.click();
+          clicked = true;
+          break;
         } else if (buttonElement) {
+          console.log('[HeadTracking] Clicking button:', buttonElement.textContent);
           buttonElement.click();
-        } else {
-          element.click();
+          clicked = true;
+          break;
+        } else if (clickableElement instanceof HTMLElement) {
+          console.log('[HeadTracking] Clicking element:', clickableElement.tagName);
+          clickableElement.click();
+          clicked = true;
+          break;
+        }
+      }
+      
+      // If no specific clickable found, click the topmost non-overlay element
+      if (!clicked && elements.length > 0) {
+        for (const element of elements) {
+          if (element instanceof HTMLElement && 
+              !element.closest('.control-panel') && 
+              !element.classList.contains('custom-cursor')) {
+            console.log('[HeadTracking] Clicking fallback element:', element.tagName);
+            element.click();
+            break;
+          }
         }
       }
       
