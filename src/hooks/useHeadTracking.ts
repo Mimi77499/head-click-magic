@@ -13,6 +13,8 @@ export interface CalibrationData {
   blinkThreshold: number;
 }
 
+export type ControlMode = 'cursor' | 'scroll';
+
 export interface HeadTrackingState {
   isInitialized: boolean;
   isCalibrating: boolean;
@@ -23,6 +25,8 @@ export interface HeadTrackingState {
   isTracking: boolean;
   error: string | null;
   clickMethod: ClickMethod;
+  controlMode: ControlMode;
+  scrollDirection: 'up' | 'down' | 'none';
 }
 
 const defaultConfig: Partial<Human.Config> = {
@@ -67,7 +71,12 @@ export function useHeadTracking() {
     isTracking: false,
     error: null,
     clickMethod: 'both',
+    controlMode: 'cursor',
+    scrollDirection: 'none',
   });
+
+  const controlModeRef = useRef<ControlMode>('cursor');
+  const scrollSpeedRef = useRef<number>(8); // pixels per frame
 
   const humanRef = useRef<Human.Human | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -102,6 +111,17 @@ export function useHeadTracking() {
   const setClickMethod = useCallback((method: ClickMethod) => {
     clickMethodRef.current = method;
     setState(prev => ({ ...prev, clickMethod: method }));
+  }, []);
+
+  const setControlMode = useCallback((mode: ControlMode) => {
+    controlModeRef.current = mode;
+    setState(prev => ({ ...prev, controlMode: mode }));
+  }, []);
+
+  const toggleControlMode = useCallback(() => {
+    const newMode = controlModeRef.current === 'cursor' ? 'scroll' : 'cursor';
+    controlModeRef.current = newMode;
+    setState(prev => ({ ...prev, controlMode: newMode }));
   }, []);
 
   const initialize = useCallback(async () => {
@@ -265,7 +285,22 @@ export function useHeadTracking() {
       // Trigger click on element under cursor
       const element = document.elementFromPoint(x, y);
       if (element instanceof HTMLElement) {
-        element.click();
+        // Check if it's a link or button for navigation
+        const linkElement = element.closest('a');
+        const buttonElement = element.closest('button');
+        
+        if (linkElement && linkElement.href) {
+          // Handle link navigation
+          const href = linkElement.getAttribute('href');
+          if (href) {
+            // For internal links, use the router by clicking
+            linkElement.click();
+          }
+        } else if (buttonElement) {
+          buttonElement.click();
+        } else {
+          element.click();
+        }
       }
       
       setTimeout(() => {
@@ -309,42 +344,93 @@ export function useHeadTracking() {
               const mouthRatio = calculateMouthOpenRatio(face);
               calibrationSamplesRef.current.mouth.push(mouthRatio);
             } else {
-              // Normal tracking - MOVE CURSOR
+              // Normal tracking
               const cal = calibrationRef.current;
-              const rawX = window.innerWidth / 2 + (yaw - cal.centerYaw) * cal.sensitivityX;
-              const rawY = window.innerHeight / 2 + (pitch - cal.centerPitch) * cal.sensitivityY;
+              const currentMode = controlModeRef.current;
               
-              // Clamp to screen bounds
-              const clampedX = Math.max(0, Math.min(window.innerWidth, rawX));
-              const clampedY = Math.max(0, Math.min(window.innerHeight, rawY));
-              
-              // Apply One-Euro Filter
-              const filtered = filterRef.current.filter(clampedX, clampedY);
-              
-              setState(prev => ({
-                ...prev,
-                cursorPosition: { x: filtered.x, y: filtered.y },
-              }));
-              
-              const currentClickMethod = clickMethodRef.current;
-              
-              // Check mouth open (if enabled)
-              if (currentClickMethod === 'mouth' || currentClickMethod === 'both') {
-                const mouthRatio = calculateMouthOpenRatio(face);
-                const isMouthOpen = mouthRatio > cal.mouthThreshold;
+              if (currentMode === 'cursor') {
+                // CURSOR MODE - Move cursor with head
+                const rawX = window.innerWidth / 2 + (yaw - cal.centerYaw) * cal.sensitivityX;
+                const rawY = window.innerHeight / 2 + (pitch - cal.centerPitch) * cal.sensitivityY;
                 
-                if (isMouthOpen && !mouthWasOpenRef.current) {
-                  triggerClick(filtered.x, filtered.y, 'mouth');
+                // Clamp to screen bounds
+                const clampedX = Math.max(0, Math.min(window.innerWidth, rawX));
+                const clampedY = Math.max(0, Math.min(window.innerHeight, rawY));
+                
+                // Apply One-Euro Filter
+                const filtered = filterRef.current.filter(clampedX, clampedY);
+                
+                setState(prev => ({
+                  ...prev,
+                  cursorPosition: { x: filtered.x, y: filtered.y },
+                  scrollDirection: 'none',
+                }));
+                
+                const currentClickMethod = clickMethodRef.current;
+                
+                // Check mouth open (if enabled)
+                if (currentClickMethod === 'mouth' || currentClickMethod === 'both') {
+                  const mouthRatio = calculateMouthOpenRatio(face);
+                  const isMouthOpen = mouthRatio > cal.mouthThreshold;
+                  
+                  if (isMouthOpen && !mouthWasOpenRef.current) {
+                    triggerClick(filtered.x, filtered.y, 'mouth');
+                  }
+                  
+                  mouthWasOpenRef.current = isMouthOpen;
                 }
                 
-                mouthWasOpenRef.current = isMouthOpen;
-              }
-              
-              // Check blink (if enabled)
-              if (currentClickMethod === 'blink' || currentClickMethod === 'both') {
-                const didBlink = detectBlink(eyeOpenness, cal.blinkThreshold);
-                if (didBlink) {
-                  triggerClick(filtered.x, filtered.y, 'blink');
+                // Check blink (if enabled)
+                if (currentClickMethod === 'blink' || currentClickMethod === 'both') {
+                  const didBlink = detectBlink(eyeOpenness, cal.blinkThreshold);
+                  if (didBlink) {
+                    triggerClick(filtered.x, filtered.y, 'blink');
+                  }
+                }
+              } else {
+                // SCROLL MODE - Scroll page with head pitch
+                const pitchDelta = pitch - cal.centerPitch;
+                const deadZone = 3; // degrees of dead zone
+                const scrollSpeed = scrollSpeedRef.current;
+                
+                let scrollDirection: 'up' | 'down' | 'none' = 'none';
+                
+                if (pitchDelta > deadZone) {
+                  // Looking down - scroll down
+                  window.scrollBy(0, scrollSpeed * (pitchDelta - deadZone) * 0.5);
+                  scrollDirection = 'down';
+                } else if (pitchDelta < -deadZone) {
+                  // Looking up - scroll up
+                  window.scrollBy(0, scrollSpeed * (pitchDelta + deadZone) * 0.5);
+                  scrollDirection = 'up';
+                }
+                
+                setState(prev => ({
+                  ...prev,
+                  scrollDirection,
+                }));
+                
+                // Still allow clicking in scroll mode
+                const currentClickMethod = clickMethodRef.current;
+                const cursorX = window.innerWidth / 2;
+                const cursorY = window.innerHeight / 2;
+                
+                if (currentClickMethod === 'mouth' || currentClickMethod === 'both') {
+                  const mouthRatio = calculateMouthOpenRatio(face);
+                  const isMouthOpen = mouthRatio > cal.mouthThreshold;
+                  
+                  if (isMouthOpen && !mouthWasOpenRef.current) {
+                    triggerClick(cursorX, cursorY, 'mouth');
+                  }
+                  
+                  mouthWasOpenRef.current = isMouthOpen;
+                }
+                
+                if (currentClickMethod === 'blink' || currentClickMethod === 'both') {
+                  const didBlink = detectBlink(eyeOpenness, cal.blinkThreshold);
+                  if (didBlink) {
+                    triggerClick(cursorX, cursorY, 'blink');
+                  }
                 }
               }
             }
@@ -395,6 +481,8 @@ export function useHeadTracking() {
     stopTracking,
     cleanup,
     setClickMethod,
+    setControlMode,
+    toggleControlMode,
     getVideoElement,
   };
 }
