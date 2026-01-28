@@ -85,10 +85,10 @@ export function useHeadTracking() {
   const calibrationRef = useRef<CalibrationData>({
     centerYaw: 0,
     centerPitch: 0,
-    sensitivityX: 80, // Reduced for more accurate 1:1 movement
+    sensitivityX: 80,
     sensitivityY: 60,
-    mouthThreshold: 0.35,
-    blinkThreshold: 0.2,
+    mouthThreshold: 0.25, // Lower default for better detection
+    blinkThreshold: 0.15, // Lower default for better detection
   });
   const lastClickRef = useRef<number>(0);
   const mouthWasOpenRef = useRef<boolean>(false);
@@ -402,9 +402,17 @@ export function useHeadTracking() {
                 // Check mouth open (if enabled)
                 if (currentClickMethod === 'mouth' || currentClickMethod === 'both') {
                   const mouthRatio = calculateMouthOpenRatio(face);
-                  const isMouthOpen = mouthRatio > cal.mouthThreshold;
+                  // Use a lower default threshold if calibration didn't set one properly
+                  const effectiveMouthThreshold = cal.mouthThreshold > 0.1 ? cal.mouthThreshold : 0.25;
+                  const isMouthOpen = mouthRatio > effectiveMouthThreshold;
+                  
+                  // Debug: Log mouth detection periodically
+                  if (Math.random() < 0.02) {
+                    console.log('[HeadTracking] Mouth:', mouthRatio.toFixed(3), 'threshold:', effectiveMouthThreshold.toFixed(3), 'open:', isMouthOpen);
+                  }
                   
                   if (isMouthOpen && !mouthWasOpenRef.current) {
+                    console.log('[HeadTracking] Mouth OPENED - triggering click at', filtered.x.toFixed(0), filtered.y.toFixed(0));
                     triggerClick(filtered.x, filtered.y, 'mouth');
                   }
                   
@@ -413,8 +421,17 @@ export function useHeadTracking() {
                 
                 // Check blink (if enabled)
                 if (currentClickMethod === 'blink' || currentClickMethod === 'both') {
-                  const didBlink = detectBlink(eyeOpenness, cal.blinkThreshold);
+                  // Use a sensible default if calibration didn't work
+                  const effectiveBlinkThreshold = cal.blinkThreshold > 0.05 ? cal.blinkThreshold : 0.15;
+                  const didBlink = detectBlink(eyeOpenness, effectiveBlinkThreshold);
+                  
+                  // Debug: Log eye openness periodically
+                  if (Math.random() < 0.02) {
+                    console.log('[HeadTracking] Eyes:', eyeOpenness.toFixed(3), 'threshold:', effectiveBlinkThreshold.toFixed(3));
+                  }
+                  
                   if (didBlink) {
+                    console.log('[HeadTracking] BLINK detected - triggering click at', filtered.x.toFixed(0), filtered.y.toFixed(0));
                     triggerClick(filtered.x, filtered.y, 'blink');
                   }
                 }
