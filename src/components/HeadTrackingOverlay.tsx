@@ -69,11 +69,9 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
   };
 
   const handleCalibrationComplete = () => {
-    // Step 1 -> Step 2: just advance
-    // Step 2 -> Done: nextCalibrationStep will set isCalibrating=false, then start tracking
     if (state.calibrationStep === 2) {
-      nextCalibrationStep(); // This completes calibration
-      startTracking(); // Start tracking immediately after
+      nextCalibrationStep();
+      startTracking();
     } else {
       nextCalibrationStep();
     }
@@ -96,7 +94,7 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.8 }}
-          className="fixed bottom-24 right-6 z-50 overflow-hidden rounded-lg shadow-2xl border-2 border-gold-accent"
+          className="fixed bottom-24 right-6 z-50 overflow-hidden rounded-2xl shadow-2xl border-2 border-primary"
           style={{ width: 200, height: 150 }}
         >
           <div ref={webcamContainerRef} className="w-full h-full bg-muted" />
@@ -122,7 +120,7 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={() => setShowWebcam(true)}
-          className="fixed bottom-24 right-6 z-50 w-12 h-12 bg-foreground text-background rounded-full flex items-center justify-center shadow-lg hover:bg-foreground/90 transition-colors"
+          className="fixed bottom-24 right-6 z-50 w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-colors"
         >
           <Video className="w-5 h-5" />
         </motion.button>
@@ -159,19 +157,19 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
                 y: state.scrollDirection === 'up' ? -10 : 0,
                 opacity: state.scrollDirection === 'up' ? 1 : 0.3 
               }}
-              className="w-0 h-0 border-l-[12px] border-r-[12px] border-b-[16px] border-l-transparent border-r-transparent border-b-gold-accent"
+              className="w-0 h-0 border-l-[12px] border-r-[12px] border-b-[16px] border-l-transparent border-r-transparent border-b-primary"
             />
-            <div className="w-1 h-8 bg-gold-accent/50 rounded-full" />
+            <div className="w-1 h-8 bg-primary/50 rounded-full" />
             <motion.div 
               animate={{ 
                 y: state.scrollDirection === 'down' ? 10 : 0,
                 opacity: state.scrollDirection === 'down' ? 1 : 0.3 
               }}
-              className="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[16px] border-l-transparent border-r-transparent border-t-gold-accent"
+              className="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[16px] border-l-transparent border-r-transparent border-t-primary"
             />
           </div>
           {isClicking && (
-            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 bg-gold-accent text-background px-3 py-1 text-xs uppercase tracking-wider font-medium whitespace-nowrap">
+            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 text-xs uppercase tracking-wider font-medium whitespace-nowrap rounded-full">
               Click!
             </div>
           )}
@@ -193,7 +191,7 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
               transform: 'translateX(-50%)',
             }}
           >
-            <div className="bg-gold-accent text-background px-3 py-1 text-xs uppercase tracking-wider font-medium">
+            <div className="bg-primary text-primary-foreground px-3 py-1 text-xs uppercase tracking-wider font-medium rounded-full">
               {state.isBlinking ? 'Blink!' : 'Click!'}
             </div>
           </motion.div>
@@ -309,11 +307,13 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-background p-12 max-w-md text-center mx-4"
+              className="bg-card p-12 max-w-md text-center mx-4 rounded-3xl shadow-2xl"
             >
               <div className="mb-8">
-                <Loader2 className="w-12 h-12 mx-auto mb-6 animate-spin text-gold-accent" />
-                <h3 className="font-display text-2xl mb-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4">
                   {state.calibrationStep === 1 
                     ? 'Look Straight Ahead' 
                     : 'Open Your Mouth Wide'}
@@ -329,8 +329,8 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
                   </p>
                 )}
               </div>
-              <Button variant="hero" onClick={handleCalibrationComplete}>
-                <Check className="w-4 h-4 mr-2" />
+              <Button variant="default" size="lg" onClick={handleCalibrationComplete} className="gap-2">
+                <Check className="w-4 h-4" />
                 Confirm
               </Button>
             </motion.div>
@@ -343,7 +343,7 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-destructive text-destructive-foreground px-6 py-3 rounded-sm"
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-destructive text-destructive-foreground px-6 py-3 rounded-xl"
         >
           {state.error}
         </motion.div>
@@ -355,22 +355,22 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="fixed top-24 left-1/2 -translate-x-1/2 z-40 bg-background/90 backdrop-blur-sm px-6 py-3 text-center max-w-md"
+          className="fixed top-24 left-1/2 -translate-x-1/2 z-40 bg-card/95 backdrop-blur-sm px-6 py-3 text-center max-w-md rounded-2xl shadow-lg border border-border"
         >
           <p className="text-sm text-muted-foreground">
             {state.controlMode === 'cursor' ? (
               <>
                 Move your head to control cursor • {' '}
-                {state.clickMethod === 'mouth' && 'Open mouth to click links'}
-                {state.clickMethod === 'blink' && 'Blink to click links'}
-                {state.clickMethod === 'both' && 'Blink or open mouth to click links'}
+                {state.clickMethod === 'mouth' && 'Open mouth to click'}
+                {state.clickMethod === 'blink' && 'Blink to click'}
+                {state.clickMethod === 'both' && 'Blink or open mouth to click'}
               </>
             ) : (
               <>
                 Look up/down to scroll • {' '}
-                {state.clickMethod === 'mouth' && 'Open mouth to click center element'}
-                {state.clickMethod === 'blink' && 'Blink to click center element'}
-                {state.clickMethod === 'both' && 'Blink or open mouth to click center element'}
+                {state.clickMethod === 'mouth' && 'Open mouth to click'}
+                {state.clickMethod === 'blink' && 'Blink to click'}
+                {state.clickMethod === 'both' && 'Blink or open mouth to click'}
               </>
             )}
           </p>
