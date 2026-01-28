@@ -3,13 +3,18 @@ import { Header } from '@/components/sayit/Header';
 import { SentenceBuilder } from '@/components/sayit/SentenceBuilder';
 import { CategoryTabs } from '@/components/sayit/CategoryTabs';
 import { SymbolGrid } from '@/components/sayit/SymbolGrid';
-import { LanguageSelector } from '@/components/sayit/LanguageSelector';
-import { ToneSelector } from '@/components/sayit/ToneSelector';
 import { SettingsPanel } from '@/components/sayit/SettingsPanel';
 import { HistoryPanel, HistoryItem } from '@/components/sayit/HistoryPanel';
 import { HeadTrackingOverlay } from '@/components/HeadTrackingOverlay';
+import { ToneSelector } from '@/components/sayit/ToneSelector';
+import { LanguageSelector } from '@/components/sayit/LanguageSelector';
 import { useSpeech } from '@/hooks/useSpeech';
 import { categories, getSymbolsByCategory, Symbol } from '@/data/symbolsData';
+import { getLanguageByCode } from '@/data/languagesData';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
 
 function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
@@ -24,6 +29,8 @@ export default function SayIt() {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isHeadTrackingActive, setIsHeadTrackingActive] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [toneDialogOpen, setToneDialogOpen] = useState(false);
+  const [langDialogOpen, setLangDialogOpen] = useState(false);
   
   // Speech settings
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -43,6 +50,7 @@ export default function SayIt() {
   } = useSpeech({ defaultLanguage: 'en' });
 
   const currentSymbols = getSymbolsByCategory(activeCategory);
+  const currentLang = getLanguageByCode(language);
 
   // Add symbol to sentence
   const handleSymbolClick = useCallback((symbol: Symbol) => {
@@ -87,8 +95,6 @@ export default function SayIt() {
   // Enhance text with AI (placeholder - would need backend)
   const handleEnhance = useCallback(() => {
     const rawText = selectedSymbols.map(s => s.text).join(' ');
-    // For now, just add some basic sentence structure
-    // In a real app, this would call an AI API
     let enhanced = rawText;
     
     // Simple enhancement rules
@@ -134,8 +140,8 @@ export default function SayIt() {
         isHeadTrackingActive={isHeadTrackingActive}
       />
 
-      <main className="container mx-auto px-4 py-6 space-y-6 pb-24">
-        {/* Sentence Builder */}
+      <main className="max-w-7xl mx-auto px-3 py-4 space-y-4">
+        {/* Sentence Builder with integrated action bar */}
         <SentenceBuilder
           selectedSymbols={selectedSymbols}
           onClear={handleClear}
@@ -144,19 +150,12 @@ export default function SayIt() {
           onEnhance={handleEnhance}
           isSpeaking={isSpeaking}
           enhancedText={enhancedText}
+          selectedTone={selectedTone}
+          onToneClick={() => setToneDialogOpen(true)}
+          selectedLanguage={language}
+          onLanguageClick={() => setLangDialogOpen(true)}
+          languageFlag={currentLang?.flag || '🌐'}
         />
-
-        {/* Language and Tone Selectors */}
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <ToneSelector
-            selectedTone={selectedTone}
-            onToneChange={setSelectedTone}
-          />
-          <LanguageSelector
-            selectedLanguage={language}
-            onLanguageChange={setLanguage}
-          />
-        </div>
 
         {/* Category Tabs */}
         <CategoryTabs
@@ -172,6 +171,32 @@ export default function SayIt() {
           selectedSymbols={selectedSymbols}
         />
       </main>
+
+      {/* Tone Selection Dialog */}
+      <Dialog open={toneDialogOpen} onOpenChange={setToneDialogOpen}>
+        <DialogContent className="sm:max-w-[320px] p-4" aria-describedby={undefined}>
+          <ToneSelector
+            selectedTone={selectedTone}
+            onToneChange={(tone) => {
+              setSelectedTone(tone);
+              setToneDialogOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Language Selection Dialog */}
+      <Dialog open={langDialogOpen} onOpenChange={setLangDialogOpen}>
+        <DialogContent className="sm:max-w-[340px] p-4" aria-describedby={undefined}>
+          <LanguageSelector
+            selectedLanguage={language}
+            onLanguageChange={(code) => {
+              setLanguage(code);
+              setLangDialogOpen(false);
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Settings Panel */}
       <SettingsPanel

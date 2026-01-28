@@ -1,5 +1,4 @@
 import { Symbol } from '@/data/symbolsData';
-import { motion } from 'framer-motion';
 
 interface SymbolGridProps {
   symbols: Symbol[];
@@ -13,36 +12,23 @@ export function SymbolGrid({ symbols, onSymbolClick, selectedSymbols }: SymbolGr
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 md:gap-3"
-    >
-      {symbols.map((symbol, index) => {
+    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1.5">
+      {symbols.map((symbol) => {
         const selected = isSelected(symbol.id);
         
         return (
-          <motion.button
+          <button
             key={symbol.id}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.02, duration: 0.2 }}
-            whileTap={{ scale: 0.92 }}
-            whileHover={{ scale: 1.05 }}
             onClick={() => onSymbolClick(symbol)}
-            className={`flex flex-col items-center justify-center gap-1 p-3 md:p-4 rounded-2xl bg-card border-2 transition-all duration-200 shadow-sm hover:shadow-md ${
-              selected 
-                ? 'border-primary bg-primary/10 shadow-button' 
-                : 'border-transparent hover:border-primary/30'
-            }`}
+            className={`symbol-card ${selected ? 'symbol-card-selected' : ''}`}
           >
-            <span className="text-3xl md:text-4xl">{symbol.emoji}</span>
-            <span className="text-xs md:text-sm font-medium text-center text-foreground leading-tight">
+            <span className="text-2xl md:text-3xl">{symbol.emoji}</span>
+            <span className="text-[10px] md:text-xs font-medium text-center text-foreground leading-tight line-clamp-2">
               {symbol.text}
             </span>
-          </motion.button>
+          </button>
         );
       })}
-    </motion.div>
+    </div>
   );
 }
