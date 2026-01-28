@@ -8,12 +8,14 @@ import { HistoryPanel, HistoryItem } from '@/components/sayit/HistoryPanel';
 import { HeadTrackingOverlay } from '@/components/HeadTrackingOverlay';
 import { ToneSelector } from '@/components/sayit/ToneSelector';
 import { LanguageSelector } from '@/components/sayit/LanguageSelector';
+import { VoiceSelector } from '@/components/sayit/VoiceSelector';
 import { useSpeech } from '@/hooks/useSpeech';
 import { categories, getSymbolsByCategory, Symbol } from '@/data/symbolsData';
 import { getLanguageByCode } from '@/data/languagesData';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
 
 function generateId() {
@@ -31,6 +33,7 @@ export default function SayIt() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [toneDialogOpen, setToneDialogOpen] = useState(false);
   const [langDialogOpen, setLangDialogOpen] = useState(false);
+  const [voiceDialogOpen, setVoiceDialogOpen] = useState(false);
   
   // Speech settings
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -41,6 +44,9 @@ export default function SayIt() {
     speak,
     stop,
     isSpeaking,
+    voices,
+    selectedVoice,
+    setSelectedVoice,
     language,
     setLanguage,
     rate,
@@ -97,6 +103,24 @@ export default function SayIt() {
     const rawText = selectedSymbols.map(s => s.text).join(' ');
     let enhanced = rawText;
     
+    // Apply tone modifications
+    switch (selectedTone) {
+      case 'friendly':
+        enhanced = `${enhanced} 😊`;
+        break;
+      case 'formal':
+        enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
+        break;
+      case 'urgent':
+        enhanced = enhanced.toUpperCase();
+        break;
+      case 'gentle':
+        enhanced = `Please, ${enhanced.toLowerCase()}`;
+        break;
+      default:
+        break;
+    }
+    
     // Simple enhancement rules
     if (!enhanced.endsWith('.') && !enhanced.endsWith('?') && !enhanced.endsWith('!')) {
       if (enhanced.includes('?') || enhanced.toLowerCase().startsWith('what') || 
@@ -113,7 +137,7 @@ export default function SayIt() {
     enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
     
     setEnhancedText(enhanced);
-  }, [selectedSymbols]);
+  }, [selectedSymbols, selectedTone]);
 
   // Clear history
   const handleClearHistory = useCallback(() => {
@@ -131,6 +155,18 @@ export default function SayIt() {
     setIsHistoryOpen(false);
   }, []);
 
+  // Test a voice without selecting it
+  const handleTestVoice = useCallback((voice: SpeechSynthesisVoice) => {
+    const testText = "Hello, this is how I sound.";
+    const utterance = new SpeechSynthesisUtterance(testText);
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+    utterance.rate = rate;
+    utterance.pitch = pitch;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utterance);
+  }, [rate, pitch]);
+
   return (
     <div className={`min-h-screen bg-background ${largeText ? 'text-lg' : ''} ${highContrast ? 'contrast-125' : ''}`}>
       <Header
@@ -138,6 +174,8 @@ export default function SayIt() {
         onHistoryClick={() => setIsHistoryOpen(true)}
         onHeadTrackingClick={() => setIsHeadTrackingActive(!isHeadTrackingActive)}
         isHeadTrackingActive={isHeadTrackingActive}
+        onVoiceClick={() => setVoiceDialogOpen(true)}
+        currentVoice={selectedVoice?.name?.replace(/Microsoft |Google |Apple /, '').slice(0, 15) || 'Voice'}
       />
 
       <main className="max-w-7xl mx-auto px-3 py-4 space-y-4">
@@ -174,7 +212,8 @@ export default function SayIt() {
 
       {/* Tone Selection Dialog */}
       <Dialog open={toneDialogOpen} onOpenChange={setToneDialogOpen}>
-        <DialogContent className="sm:max-w-[320px] p-4" aria-describedby={undefined}>
+        <DialogContent className="sm:max-w-[320px] p-4">
+          <DialogTitle className="sr-only">Select Tone</DialogTitle>
           <ToneSelector
             selectedTone={selectedTone}
             onToneChange={(tone) => {
@@ -187,13 +226,30 @@ export default function SayIt() {
 
       {/* Language Selection Dialog */}
       <Dialog open={langDialogOpen} onOpenChange={setLangDialogOpen}>
-        <DialogContent className="sm:max-w-[340px] p-4" aria-describedby={undefined}>
+        <DialogContent className="sm:max-w-[340px] p-4">
+          <DialogTitle className="sr-only">Select Language</DialogTitle>
           <LanguageSelector
             selectedLanguage={language}
             onLanguageChange={(code) => {
               setLanguage(code);
               setLangDialogOpen(false);
             }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Voice Selection Dialog */}
+      <Dialog open={voiceDialogOpen} onOpenChange={setVoiceDialogOpen}>
+        <DialogContent className="sm:max-w-[380px] p-4">
+          <DialogTitle className="sr-only">Select Voice</DialogTitle>
+          <VoiceSelector
+            voices={voices}
+            selectedVoice={selectedVoice}
+            onVoiceChange={(voice) => {
+              setSelectedVoice(voice);
+              setVoiceDialogOpen(false);
+            }}
+            onTestVoice={handleTestVoice}
           />
         </DialogContent>
       </Dialog>
