@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useHeadTracking, ClickMethod } from '@/hooks/useHeadTracking';
+import { useHeadTracking, ClickMethod, ControlMode } from '@/hooks/useHeadTracking';
 import { Button } from '@/components/ui/button';
-import { Eye, MousePointer, Camera, Check, X, Loader2, EyeOff, Video } from 'lucide-react';
+import { Eye, MousePointer, Camera, Check, X, Loader2, EyeOff, Video, ArrowUpDown, Move } from 'lucide-react';
 
 interface HeadTrackingOverlayProps {
   onClose: () => void;
@@ -14,6 +14,11 @@ const clickMethodLabels: Record<ClickMethod, string> = {
   both: 'Both',
 };
 
+const controlModeLabels: Record<ControlMode, string> = {
+  cursor: 'Cursor',
+  scroll: 'Scroll',
+};
+
 export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
   const {
     state,
@@ -23,6 +28,7 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
     startTracking,
     stopTracking,
     setClickMethod,
+    toggleControlMode,
     getVideoElement,
   } = useHeadTracking();
 
@@ -122,8 +128,8 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
         </motion.button>
       )}
 
-      {/* Virtual Cursor */}
-      {state.isTracking && (
+      {/* Virtual Cursor - only show in cursor mode */}
+      {state.isTracking && state.controlMode === 'cursor' && (
         <motion.div
           className="custom-cursor"
           style={{
@@ -140,9 +146,41 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
         />
       )}
 
-      {/* Click Indicator */}
+      {/* Scroll Indicator - show in scroll mode */}
+      {state.isTracking && state.controlMode === 'scroll' && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[9998] pointer-events-none"
+        >
+          <div className="flex flex-col items-center gap-2">
+            <motion.div 
+              animate={{ 
+                y: state.scrollDirection === 'up' ? -10 : 0,
+                opacity: state.scrollDirection === 'up' ? 1 : 0.3 
+              }}
+              className="w-0 h-0 border-l-[12px] border-r-[12px] border-b-[16px] border-l-transparent border-r-transparent border-b-gold-accent"
+            />
+            <div className="w-1 h-8 bg-gold-accent/50 rounded-full" />
+            <motion.div 
+              animate={{ 
+                y: state.scrollDirection === 'down' ? 10 : 0,
+                opacity: state.scrollDirection === 'down' ? 1 : 0.3 
+              }}
+              className="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[16px] border-l-transparent border-r-transparent border-t-gold-accent"
+            />
+          </div>
+          {isClicking && (
+            <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 bg-gold-accent text-background px-3 py-1 text-xs uppercase tracking-wider font-medium whitespace-nowrap">
+              Click!
+            </div>
+          )}
+        </motion.div>
+      )}
+
+      {/* Click Indicator - cursor mode only */}
       <AnimatePresence mode="wait">
-        {state.isTracking && isClicking && (
+        {state.isTracking && state.controlMode === 'cursor' && isClicking && (
           <motion.div
             key="click-indicator"
             initial={{ opacity: 0, scale: 0.5 }}
@@ -207,6 +245,21 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
 
         {state.isTracking && (
           <>
+            {/* Control Mode Toggle (Cursor/Scroll) */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleControlMode}
+              className="text-primary-foreground hover:text-primary-foreground/80 hover:bg-transparent"
+            >
+              {state.controlMode === 'cursor' ? (
+                <Move className="w-4 h-4 mr-2" />
+              ) : (
+                <ArrowUpDown className="w-4 h-4 mr-2" />
+              )}
+              <span className="text-xs">{controlModeLabels[state.controlMode]}</span>
+            </Button>
+
             {/* Click Method Toggle */}
             <Button
               variant="ghost"
@@ -302,13 +355,24 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="fixed top-24 left-1/2 -translate-x-1/2 z-40 bg-background/90 backdrop-blur-sm px-6 py-3 text-center max-w-sm"
+          className="fixed top-24 left-1/2 -translate-x-1/2 z-40 bg-background/90 backdrop-blur-sm px-6 py-3 text-center max-w-md"
         >
           <p className="text-sm text-muted-foreground">
-            Move your head to control cursor • {' '}
-            {state.clickMethod === 'mouth' && 'Open mouth to click'}
-            {state.clickMethod === 'blink' && 'Blink quickly to click'}
-            {state.clickMethod === 'both' && 'Blink or open mouth to click'}
+            {state.controlMode === 'cursor' ? (
+              <>
+                Move your head to control cursor • {' '}
+                {state.clickMethod === 'mouth' && 'Open mouth to click links'}
+                {state.clickMethod === 'blink' && 'Blink to click links'}
+                {state.clickMethod === 'both' && 'Blink or open mouth to click links'}
+              </>
+            ) : (
+              <>
+                Look up/down to scroll • {' '}
+                {state.clickMethod === 'mouth' && 'Open mouth to click center element'}
+                {state.clickMethod === 'blink' && 'Blink to click center element'}
+                {state.clickMethod === 'both' && 'Blink or open mouth to click center element'}
+              </>
+            )}
           </p>
         </motion.div>
       )}
