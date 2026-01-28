@@ -63,9 +63,13 @@ export function HeadTrackingOverlay({ onClose }: HeadTrackingOverlayProps) {
   };
 
   const handleCalibrationComplete = () => {
-    nextCalibrationStep();
-    if (state.calibrationStep >= 2) {
-      startTracking();
+    // Step 1 -> Step 2: just advance
+    // Step 2 -> Done: nextCalibrationStep will set isCalibrating=false, then start tracking
+    if (state.calibrationStep === 2) {
+      nextCalibrationStep(); // This completes calibration
+      startTracking(); // Start tracking immediately after
+    } else {
+      nextCalibrationStep();
     }
   };
 
