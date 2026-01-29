@@ -181,6 +181,14 @@
     transition: transform 0.1s ease-out;
   }
 
+  /* Control panel for head tracking */
+  .control-panel {
+    @apply fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999];
+    @apply bg-primary text-primary-foreground;
+    @apply px-6 py-3 rounded-full;
+    @apply shadow-2xl pointer-events-auto;
+  }
+
   /* Hide scrollbar but allow scroll */
   .scrollbar-hide {
     -ms-overflow-style: none;

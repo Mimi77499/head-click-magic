@@ -98,43 +98,73 @@ export default function SayIt() {
     }
   }, [enhancedText, selectedSymbols, speak, language]);
 
-  // Enhance text with AI (placeholder - would need backend)
+  // Enhance text with tone applied
   const handleEnhance = useCallback(() => {
     const rawText = selectedSymbols.map(s => s.text).join(' ');
+    if (!rawText.trim()) return;
+    
     let enhanced = rawText;
     
-    // Apply tone modifications
+    // Apply tone modifications more naturally
     switch (selectedTone) {
       case 'friendly':
-        enhanced = `${enhanced} 😊`;
+        // Add warmth to the message
+        if (!enhanced.startsWith('Hi') && !enhanced.startsWith('Hello')) {
+          enhanced = `Hey, ${enhanced.toLowerCase()}`;
+        }
+        if (!enhanced.endsWith('!')) enhanced = enhanced.replace(/[.?]?$/, '! 😊');
         break;
       case 'formal':
+        // Make it polite and professional
+        if (!enhanced.toLowerCase().includes('please')) {
+          enhanced = `I would like to say: ${enhanced}`;
+        }
         enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
+        if (!enhanced.endsWith('.')) enhanced += '.';
         break;
       case 'urgent':
+        // Make it urgent with emphasis
         enhanced = enhanced.toUpperCase();
+        if (!enhanced.endsWith('!')) enhanced += '!';
+        enhanced = `⚠️ ${enhanced}`;
         break;
       case 'gentle':
+        // Softer, more polite phrasing
         enhanced = `Please, ${enhanced.toLowerCase()}`;
+        if (!enhanced.endsWith('.') && !enhanced.endsWith('?')) enhanced += '.';
+        break;
+      case 'excited':
+        // Add excitement
+        enhanced = `${enhanced}!!! 🎉`;
         break;
       default:
+        // Neutral - just add punctuation
+        if (!enhanced.endsWith('.') && !enhanced.endsWith('?') && !enhanced.endsWith('!')) {
+          if (enhanced.toLowerCase().startsWith('what') || 
+              enhanced.toLowerCase().startsWith('where') || 
+              enhanced.toLowerCase().startsWith('how') ||
+              enhanced.toLowerCase().startsWith('when') || 
+              enhanced.toLowerCase().startsWith('why') ||
+              enhanced.toLowerCase().startsWith('who') ||
+              enhanced.toLowerCase().startsWith('can') ||
+              enhanced.toLowerCase().startsWith('do') ||
+              enhanced.toLowerCase().startsWith('is') ||
+              enhanced.toLowerCase().startsWith('are')) {
+            enhanced += '?';
+          } else {
+            enhanced += '.';
+          }
+        }
         break;
     }
     
-    // Simple enhancement rules
-    if (!enhanced.endsWith('.') && !enhanced.endsWith('?') && !enhanced.endsWith('!')) {
-      if (enhanced.includes('?') || enhanced.toLowerCase().startsWith('what') || 
-          enhanced.toLowerCase().startsWith('where') || enhanced.toLowerCase().startsWith('how') ||
-          enhanced.toLowerCase().startsWith('when') || enhanced.toLowerCase().startsWith('why') ||
-          enhanced.toLowerCase().startsWith('who')) {
-        enhanced += '?';
-      } else {
-        enhanced += '.';
-      }
+    // Capitalize first letter (after tone prefix if any)
+    const firstLetterIdx = enhanced.search(/[a-zA-Z]/);
+    if (firstLetterIdx >= 0) {
+      enhanced = enhanced.slice(0, firstLetterIdx) + 
+                 enhanced.charAt(firstLetterIdx).toUpperCase() + 
+                 enhanced.slice(firstLetterIdx + 1);
     }
-    
-    // Capitalize first letter
-    enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
     
     setEnhancedText(enhanced);
   }, [selectedSymbols, selectedTone]);
