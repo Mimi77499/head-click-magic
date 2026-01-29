@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { Trash2, Volume2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,14 +25,14 @@ interface HistoryPanelProps {
   onSelectItem: (text: string) => void;
 }
 
-export function HistoryPanel({
+export const HistoryPanel = forwardRef<HTMLDivElement, HistoryPanelProps>(function HistoryPanel({
   isOpen,
   onClose,
   history,
   onClearHistory,
   onSpeakItem,
   onSelectItem,
-}: HistoryPanelProps) {
+}, ref) {
   const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat('en', {
       hour: 'numeric',
@@ -150,4 +151,6 @@ export function HistoryPanel({
       </SheetContent>
     </Sheet>
   );
-}
+});
+
+HistoryPanel.displayName = 'HistoryPanel';
