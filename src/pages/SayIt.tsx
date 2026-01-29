@@ -10,8 +10,10 @@ import { ToneSelector } from '@/components/sayit/ToneSelector';
 import { LanguageSelector } from '@/components/sayit/LanguageSelector';
 import { VoiceSelector } from '@/components/sayit/VoiceSelector';
 import { useSpeech } from '@/hooks/useSpeech';
+import { useAIEnhance } from '@/hooks/useAIEnhance';
 import { categories, getSymbolsByCategory, Symbol } from '@/data/symbolsData';
 import { getLanguageByCode } from '@/data/languagesData';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -55,6 +57,16 @@ export default function SayIt() {
     setPitch,
   } = useSpeech({ defaultLanguage: 'en' });
 
+  // AI Enhancement hook
+  const { enhance, isEnhancing } = useAIEnhance({
+    onSuccess: (text) => {
+      toast.success('Text enhanced with AI!');
+    },
+    onError: (error) => {
+      console.error('AI enhancement failed:', error);
+    }
+  });
+
   const currentSymbols = getSymbolsByCategory(activeCategory);
   const currentLang = getLanguageByCode(language);
 
@@ -81,7 +93,7 @@ export default function SayIt() {
     stop();
   }, [stop]);
 
-  // Speak the sentence
+  // Speak the sentence - uses the enhanced/translated text and correct language voice
   const handleSpeak = useCallback(() => {
     const text = enhancedText || selectedSymbols.map(s => s.text).join(' ');
     if (text) {
@@ -98,76 +110,49 @@ export default function SayIt() {
     }
   }, [enhancedText, selectedSymbols, speak, language]);
 
-  // Enhance text with tone applied
-  const handleEnhance = useCallback(() => {
+  // AI-powered enhancement with tone and translation
+  const handleEnhance = useCallback(async () => {
     const rawText = selectedSymbols.map(s => s.text).join(' ');
-    if (!rawText.trim()) return;
-    
-    let enhanced = rawText;
-    
-    // Apply tone modifications more naturally
-    switch (selectedTone) {
-      case 'friendly':
-        // Add warmth to the message
-        if (!enhanced.startsWith('Hi') && !enhanced.startsWith('Hello')) {
-          enhanced = `Hey, ${enhanced.toLowerCase()}`;
-        }
-        if (!enhanced.endsWith('!')) enhanced = enhanced.replace(/[.?]?$/, '! 😊');
-        break;
-      case 'formal':
-        // Make it polite and professional
-        if (!enhanced.toLowerCase().includes('please')) {
-          enhanced = `I would like to say: ${enhanced}`;
-        }
-        enhanced = enhanced.charAt(0).toUpperCase() + enhanced.slice(1);
-        if (!enhanced.endsWith('.')) enhanced += '.';
-        break;
-      case 'urgent':
-        // Make it urgent with emphasis
-        enhanced = enhanced.toUpperCase();
-        if (!enhanced.endsWith('!')) enhanced += '!';
-        enhanced = `⚠️ ${enhanced}`;
-        break;
-      case 'gentle':
-        // Softer, more polite phrasing
-        enhanced = `Please, ${enhanced.toLowerCase()}`;
-        if (!enhanced.endsWith('.') && !enhanced.endsWith('?')) enhanced += '.';
-        break;
-      case 'excited':
-        // Add excitement
-        enhanced = `${enhanced}!!! 🎉`;
-        break;
-      default:
-        // Neutral - just add punctuation
-        if (!enhanced.endsWith('.') && !enhanced.endsWith('?') && !enhanced.endsWith('!')) {
-          if (enhanced.toLowerCase().startsWith('what') || 
-              enhanced.toLowerCase().startsWith('where') || 
-              enhanced.toLowerCase().startsWith('how') ||
-              enhanced.toLowerCase().startsWith('when') || 
-              enhanced.toLowerCase().startsWith('why') ||
-              enhanced.toLowerCase().startsWith('who') ||
-              enhanced.toLowerCase().startsWith('can') ||
-              enhanced.toLowerCase().startsWith('do') ||
-              enhanced.toLowerCase().startsWith('is') ||
-              enhanced.toLowerCase().startsWith('are')) {
-            enhanced += '?';
-          } else {
-            enhanced += '.';
-          }
-        }
-        break;
+    if (!rawText.trim()) {
+      toast.error('Please select some symbols first');
+      return;
     }
     
-    // Capitalize first letter (after tone prefix if any)
-    const firstLetterIdx = enhanced.search(/[a-zA-Z]/);
-    if (firstLetterIdx >= 0) {
-      enhanced = enhanced.slice(0, firstLetterIdx) + 
-                 enhanced.charAt(firstLetterIdx).toUpperCase() + 
-                 enhanced.slice(firstLetterIdx + 1);
+    const result = await enhance(rawText, selectedTone, language, 'en');
+    if (result) {
+      setEnhancedText(result);
     }
+  }, [selectedSymbols, selectedTone, language, enhance]);
+
+  // Handle tone change - apply enhancement immediately
+  const handleToneChange = useCallback(async (tone: string) => {
+    setSelectedTone(tone);
+    setToneDialogOpen(false);
     
-    setEnhancedText(enhanced);
-  }, [selectedSymbols, selectedTone]);
+    // Auto-enhance when tone changes if there are symbols
+    if (selectedSymbols.length > 0) {
+      const rawText = selectedSymbols.map(s => s.text).join(' ');
+      const result = await enhance(rawText, tone, language, 'en');
+      if (result) {
+        setEnhancedText(result);
+      }
+    }
+  }, [selectedSymbols, language, enhance]);
+
+  // Handle language change - apply translation immediately
+  const handleLanguageChange = useCallback(async (code: string) => {
+    setLanguage(code);
+    setLangDialogOpen(false);
+    
+    // Auto-translate when language changes if there are symbols
+    if (selectedSymbols.length > 0) {
+      const rawText = selectedSymbols.map(s => s.text).join(' ');
+      const result = await enhance(rawText, selectedTone, code, 'en');
+      if (result) {
+        setEnhancedText(result);
+      }
+    }
+  }, [selectedSymbols, selectedTone, setLanguage, enhance]);
 
   // Clear history
   const handleClearHistory = useCallback(() => {
@@ -217,6 +202,7 @@ export default function SayIt() {
           onSpeak={handleSpeak}
           onEnhance={handleEnhance}
           isSpeaking={isSpeaking}
+          isEnhancing={isEnhancing}
           enhancedText={enhancedText}
           selectedTone={selectedTone}
           onToneClick={() => setToneDialogOpen(true)}
@@ -246,10 +232,7 @@ export default function SayIt() {
           <DialogTitle className="sr-only">Select Tone</DialogTitle>
           <ToneSelector
             selectedTone={selectedTone}
-            onToneChange={(tone) => {
-              setSelectedTone(tone);
-              setToneDialogOpen(false);
-            }}
+            onToneChange={handleToneChange}
           />
         </DialogContent>
       </Dialog>
@@ -260,10 +243,7 @@ export default function SayIt() {
           <DialogTitle className="sr-only">Select Language</DialogTitle>
           <LanguageSelector
             selectedLanguage={language}
-            onLanguageChange={(code) => {
-              setLanguage(code);
-              setLangDialogOpen(false);
-            }}
+            onLanguageChange={handleLanguageChange}
           />
         </DialogContent>
       </Dialog>

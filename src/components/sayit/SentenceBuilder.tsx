@@ -1,4 +1,4 @@
-import { Trash2, Sparkles, Volume2 } from 'lucide-react';
+import { Trash2, Sparkles, Volume2, ChevronDown, Loader2 } from 'lucide-react';
 import { Symbol } from '@/data/symbolsData';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -9,6 +9,7 @@ interface SentenceBuilderProps {
   onSpeak: () => void;
   onEnhance: () => void;
   isSpeaking: boolean;
+  isEnhancing?: boolean;
   enhancedText?: string;
   selectedTone: string;
   onToneClick: () => void;
@@ -24,6 +25,7 @@ export function SentenceBuilder({
   onSpeak,
   onEnhance,
   isSpeaking,
+  isEnhancing = false,
   enhancedText,
   selectedTone,
   onToneClick,
@@ -41,6 +43,7 @@ export function SentenceBuilder({
     casual: '😎',
     urgent: '⚡',
     gentle: '🌸',
+    excited: '🎉',
   };
 
   return (
@@ -100,19 +103,20 @@ export function SentenceBuilder({
         >
           <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
             <Sparkles className="w-3 h-3" />
-            Enhanced:
+            AI Enhanced:
           </p>
           <p className="text-foreground text-sm font-medium">{enhancedText}</p>
         </motion.div>
       )}
 
-      {/* Action buttons row */}
+      {/* Action buttons row - matching reference design */}
       <div className="flex flex-wrap items-center justify-center gap-2">
         {/* Clear button */}
         <button
           onClick={onClear}
           disabled={!hasSymbols}
           className="action-btn disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Clear"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -120,29 +124,35 @@ export function SentenceBuilder({
         {/* AI Enhance */}
         <button
           onClick={onEnhance}
-          disabled={!hasSymbols}
+          disabled={!hasSymbols || isEnhancing}
           className="action-btn disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <Sparkles className="w-4 h-4" />
+          {isEnhancing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Sparkles className="w-4 h-4" />
+          )}
           <span>AI</span>
         </button>
 
-        {/* Tone selector */}
+        {/* Tone selector with dropdown indicator */}
         <button
           onClick={onToneClick}
           className="action-btn"
         >
           <span>{toneIcons[selectedTone] || '😐'}</span>
           <span>Tone</span>
+          <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
         </button>
 
-        {/* Language selector */}
+        {/* Language/Translate selector with dropdown indicator */}
         <button
           onClick={onLanguageClick}
           className="action-btn"
         >
           <span>{languageFlag}</span>
           <span>Translate</span>
+          <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
         </button>
 
         {/* Speak button */}
