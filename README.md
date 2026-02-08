@@ -85,6 +85,8 @@ Tailwind CSS
 
 shadcn/ui
 
+Google API
+
 🚀 Getting Started (Local Development)
 Prerequisites
 
