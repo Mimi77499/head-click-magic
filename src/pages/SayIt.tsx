@@ -1,16 +1,18 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Header } from '@/components/sayit/Header';
 import { SentenceBuilder } from '@/components/sayit/SentenceBuilder';
 import { CategoryTabs } from '@/components/sayit/CategoryTabs';
 import { SymbolGrid } from '@/components/sayit/SymbolGrid';
 import { SettingsPanel } from '@/components/sayit/SettingsPanel';
 import { HistoryPanel, HistoryItem } from '@/components/sayit/HistoryPanel';
+import { SuggestionsPanel } from '@/components/sayit/SuggestionsPanel';
 import { HeadTrackingOverlay } from '@/components/HeadTrackingOverlay';
 import { ToneSelector } from '@/components/sayit/ToneSelector';
 import { LanguageSelector } from '@/components/sayit/LanguageSelector';
 import { VoiceSelector } from '@/components/sayit/VoiceSelector';
 import { useSpeech } from '@/hooks/useSpeech';
 import { useAIEnhance } from '@/hooks/useAIEnhance';
+import { useGeminiSuggestions } from '@/hooks/useGeminiSuggestions';
 import { categories, getSymbolsByCategory, Symbol } from '@/data/symbolsData';
 import { getLanguageByCode } from '@/data/languagesData';
 import { toast } from 'sonner';
@@ -36,6 +38,7 @@ export default function SayIt() {
   const [toneDialogOpen, setToneDialogOpen] = useState(false);
   const [langDialogOpen, setLangDialogOpen] = useState(false);
   const [voiceDialogOpen, setVoiceDialogOpen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   
   // Speech settings
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -67,8 +70,21 @@ export default function SayIt() {
     }
   });
 
+  // Gemini suggestions hook
+  const { suggestions, isLoading: isSuggestionsLoading, generateSuggestions } = useGeminiSuggestions();
+
   const currentSymbols = getSymbolsByCategory(activeCategory);
   const currentLang = getLanguageByCode(language);
+
+  // Generate suggestions when symbols change
+  useEffect(() => {
+    if (showSuggestions && selectedSymbols.length > 0) {
+      generateSuggestions(selectedSymbols, history.map(h => ({
+        role: 'user' as const,
+        text: h.text
+      })), activeCategory);
+    }
+  }, [selectedSymbols, showSuggestions, activeCategory]);
 
   // Add symbol to sentence
   const handleSymbolClick = useCallback((symbol: Symbol) => {
@@ -79,6 +95,12 @@ export default function SayIt() {
       speak(symbol.text);
     }
   }, [autoSpeak, speak]);
+
+  // Handle suggestion click - add phrase directly
+  const handleSuggestionClick = useCallback((text: string) => {
+    setEnhancedText(text);
+    toast.success('Suggestion added!');
+  }, []);
 
   // Remove symbol from sentence
   const handleRemoveSymbol = useCallback((index: number) => {
@@ -183,7 +205,7 @@ export default function SayIt() {
   }, [rate, pitch]);
 
   return (
-    <div className={`min-h-screen bg-background ${largeText ? 'text-lg' : ''} ${highContrast ? 'contrast-125' : ''}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-100 ${largeText ? 'text-lg' : ''} ${highContrast ? 'contrast-125' : ''}`}>
       <Header
         onSettingsClick={() => setIsSettingsOpen(true)}
         onHistoryClick={() => setIsHistoryOpen(true)}
@@ -193,37 +215,52 @@ export default function SayIt() {
         currentVoice={selectedVoice?.name?.replace(/Microsoft |Google |Apple /, '').slice(0, 15) || 'Voice'}
       />
 
-      <main className="max-w-7xl mx-auto px-3 py-4 space-y-4">
-        {/* Sentence Builder with integrated action bar */}
-        <SentenceBuilder
-          selectedSymbols={selectedSymbols}
-          onClear={handleClear}
-          onRemoveSymbol={handleRemoveSymbol}
-          onSpeak={handleSpeak}
-          onEnhance={handleEnhance}
-          isSpeaking={isSpeaking}
-          isEnhancing={isEnhancing}
-          enhancedText={enhancedText}
-          selectedTone={selectedTone}
-          onToneClick={() => setToneDialogOpen(true)}
-          selectedLanguage={language}
-          onLanguageClick={() => setLangDialogOpen(true)}
-          languageFlag={currentLang?.flag || '🌐'}
-        />
+      <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+        {/* Sentence Builder - Full Width */}
+        <div className="animate-fade-in">
+          <SentenceBuilder
+            selectedSymbols={selectedSymbols}
+            onClear={handleClear}
+            onRemoveSymbol={handleRemoveSymbol}
+            onSpeak={handleSpeak}
+            onEnhance={handleEnhance}
+            isSpeaking={isSpeaking}
+            isEnhancing={isEnhancing}
+            enhancedText={enhancedText}
+            selectedTone={selectedTone}
+            onToneClick={() => setToneDialogOpen(true)}
+            selectedLanguage={language}
+            onLanguageClick={() => setLangDialogOpen(true)}
+            languageFlag={currentLang?.flag || '🌐'}
+          />
+        </div>
+
+        {/* AI Suggestions Panel */}
+        <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <SuggestionsPanel
+            suggestions={suggestions}
+            isLoading={isSuggestionsLoading}
+            onSuggestionClick={handleSuggestionClick}
+          />
+        </div>
 
         {/* Category Tabs */}
-        <CategoryTabs
-          categories={categories}
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-        />
+        <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <CategoryTabs
+            categories={categories}
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+          />
+        </div>
 
         {/* Symbol Grid */}
-        <SymbolGrid
-          symbols={currentSymbols}
-          onSymbolClick={handleSymbolClick}
-          selectedSymbols={selectedSymbols}
-        />
+        <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          <SymbolGrid
+            symbols={currentSymbols}
+            onSymbolClick={handleSymbolClick}
+            selectedSymbols={selectedSymbols}
+          />
+        </div>
       </main>
 
       {/* Tone Selection Dialog */}
