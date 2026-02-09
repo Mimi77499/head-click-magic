@@ -185,7 +185,7 @@ Output:
       const proxyResp = await fetch(proxyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ latestMessage, conversationHistory, model: 'gemini-1.5-flash' }),
+        body: JSON.stringify({ latestMessage, conversationHistory, model: 'gemini-3-flash' }),
       });
 
       if (proxyResp.ok) {

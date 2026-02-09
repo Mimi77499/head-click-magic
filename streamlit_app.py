@@ -10,7 +10,7 @@ except Exception:
     GENAI_AVAILABLE = False
 
 # Configure model
-DEFAULT_MODEL = "gemini-1.5-flash"
+DEFAULT_MODEL = "gemini-3-flash"
 
 st.set_page_config(page_title="SayIt — Gemini Chat Prototype", layout="wide")
 

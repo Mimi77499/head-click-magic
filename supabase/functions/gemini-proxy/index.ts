@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { latestMessage, conversationHistory, model = 'gemini-1.5-flash' } = await req.json();
+    const { latestMessage, conversationHistory, model = 'gemini-3-flash' } = await req.json();
 
     const API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
     if (!API_KEY) {
