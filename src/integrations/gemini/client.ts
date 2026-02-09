@@ -2,10 +2,14 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
-if (!apiKey) {
-  throw new Error('VITE_GEMINI_API_KEY is not set in environment variables');
+let geminiModel: ReturnType<GoogleGenerativeAI['getGenerativeModel']> | null = null;
+
+if (apiKey) {
+  const genAI = new GoogleGenerativeAI(apiKey);
+  // Use explicit Gemini 3 model to match hackathon requirements
+  geminiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+} else {
+  console.warn('VITE_GEMINI_API_KEY not set—Gemini features will use proxy fallback only');
 }
 
-const genAI = new GoogleGenerativeAI(apiKey);
-// Use explicit Gemini 3 model to match hackathon requirements
-export const geminiModel = genAI.getGenerativeModel({ model: 'gemini-3-pro' });
+export { geminiModel };

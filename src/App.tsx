@@ -40,8 +40,9 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route 
-              path="/" 
+            {/* Home route keeps the in-memory mode switching behavior */}
+            <Route
+              path="/"
               element={
                 currentMode === 'home' ? (
                   <Home onSelectMode={handleSelectMode} />
@@ -58,8 +59,13 @@ const App = () => {
                 ) : (
                   <Home onSelectMode={handleSelectMode} />
                 )
-              } 
+              }
             />
+
+            {/* Explicit routes so the accessible chat and collaborative chat can be opened directly via URL */}
+            <Route path="/collaborative" element={<CollaborativeMode isHeadTrackingActive={false} initialMessage={collaborativeInitialMessage} onNavigate={handleSelectMode} />} />
+            <Route path="/accessible" element={<AccessibleChat onNavigate={handleSelectMode} />} />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -13,6 +13,10 @@ export async function getSuggestedPhrases(
   conversationHistory: Array<{ role: 'user' | 'other'; text: string }>,
   category?: string
 ): Promise<Suggestion[]> {
+  if (!geminiModel) {
+    console.warn('getSuggestedPhrases: Gemini client-side model not available');
+    return [];
+  }
   try {
     const currentSentence = currentSymbols.map(s => s.text).join(' ');
     const historyContext = conversationHistory
@@ -62,6 +66,10 @@ export async function enhanceTextWithContext(
   tone: string,
   conversationHistory: Array<{ role: 'user' | 'other'; text: string }>
 ): Promise<string> {
+  if (!geminiModel) {
+    console.warn('enhanceTextWithContext: Gemini client-side model not available');
+    return text;
+  }
   try {
     const historyContext = conversationHistory
       .map(h => `${h.role === 'user' ? 'Me' : 'Them'}: ${h.text}`)
@@ -91,6 +99,10 @@ export async function analyzeSentiment(text: string): Promise<{
   sentiment: 'positive' | 'negative' | 'neutral';
   confidence: number;
 }> {
+  if (!geminiModel) {
+    console.warn('analyzeSentiment: Gemini client-side model not available');
+    return { sentiment: 'neutral', confidence: 0 };
+  }
   try {
     const prompt = `Analyze the sentiment of this text in one word: "${text}"
 Reply with ONLY: positive, negative, or neutral`;
@@ -166,7 +178,8 @@ Output:
 `;
 
     // Build request to serverless proxy (keeps API key server-side)
-    const proxyUrl = (typeof import.meta !== 'undefined' && (import.meta.env as any)?.VITE_GEMINI_PROXY_URL) || '/supabase/functions/v1/gemini-proxy';
+    const proxyUrl = (typeof import.meta !== 'undefined' && (import.meta.env as any)?.VITE_GEMINI_PROXY_URL) || 
+      'https://yhxdejobqwhfzeviqnht.supabase.co/functions/v1/gemini-proxy';
 
     try {
       const proxyResp = await fetch(proxyUrl, {
@@ -191,6 +204,11 @@ Output:
     }
 
     // Fallback: use client-side geminiModel (for local testing when proxy is unavailable)
+    if (!geminiModel) {
+      console.warn('generateReply: Gemini client-side model not available (missing API key)');
+      return { reply: 'Could you clarify that a bit more?', action: 'askClarifying', confidence: 0.5, sources: [] } as StructuredReply;
+    }
+
     console.log('Using client-side Gemini fallback (proxy unavailable)');
     const fallbackPrompt = `${systemInstructions}\n\n${examples}\n\nConversation:\n${historyContext || 'No history'}\n\nLatest message: "${latestMessage}"\n\nProvide the JSON output now.`;
     
