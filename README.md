@@ -1,152 +1,258 @@
-# Welcome to my project
+# 🎯 SayIt — Accessible AI-Powered Communication for Everyone
 
-## Project info
+**Breaking communication barriers for people with disabilities using Google Gemini 3 and modern web accessibility.**
 
-**URL**: (https://usesayit.vercel.app/)
-ABOUT PROJECT
-SayIt — Multilingual, Hands-Free AAC Communication App
+---
 
-SayIt is an AI-powered Augmentative and Alternative Communication (AAC) web application designed to help people with speech and motor impairments communicate naturally, expressively, and independently.
+## 🚀 Overview
 
-The app combines multilingual text-to-speech, voice and tone customization, and hands-free head & facial gesture controls to make communication accessible to users who cannot easily speak or use their hands.
+**SayIt** is an open-source, AI-powered Augmentative and Alternative Communication (AAC) application designed to help people with speech, motor, and cognitive disabilities communicate naturally, expressively, and independently.
 
-🌍 Why SayIt Matters
+Powered by **Google Gemini 3**, SayIt enables:
+- 💬 **Natural, intelligent conversations** via AI-driven replies
+- 👁️ **Head-tracking eye-gaze control** (hands-free interaction for people without hands)
+- 🎙️ **Voice input & output** (speak to chat, hear AI responses)
+- ♿ **High-contrast, large-text UI** (visual accessibility for low-vision users)
+- 🌍 **30+ language support** (multilingual communication)
+- ✨ **Symbol-based communication** (for non-verbal users)
 
-Many AAC tools are limited by:
+### Who is SayIt for?
 
-Few supported languages
+✓ Deaf and hard-of-hearing individuals  
+✓ Non-verbal people (autism, apraxia, etc.)  
+✓ Motor disabilities (ALS, cerebral palsy, stroke recovery)  
+✓ Speech impairments  
+✓ Anyone who needs an accessible communication tool  
 
-Lack of personalization
+---
 
-Heavy reliance on touch input
+## ✨ Key Features
 
-SayIt removes these barriers by enabling:
+| Feature | Description |
+|---------|-------------|
+| **Accessible Chat** | Simple, high-contrast chat with Gemini 3 backend. Type, speak, or use quick-reply buttons. |
+| **Head-Tracking Control** | Eye-gaze navigation for hands-free interaction (for people without hand use). |
+| **Voice Input & Output** | Speak to type, hear AI responses read aloud. |
+| **Symbol-Based AAC** | Build messages from symbols for non-verbal communication. |
+| **AI Suggestions** | Gemini 3 predicts next phrases based on your symbols and conversation context. |
+| **High Contrast Mode** | Black/white UI option for visual accessibility. |
+| **Large Text Settings** | Adjustable text sizes (normal, large, XL). |
+| **Quick-Reply Buttons** | Pre-set common phrases accessible via head-gaze or touch. |
+| **Real-Time Conversation** | Chat mode for talking with hearing individuals (they don't need the app). |
 
-Communication in multiple languages (including Nigerian languages)
+---
 
-Personalized voices and tones
+## 💡 Gemini 3 Integration
 
-Head-movement and mouth-gesture navigation for hands-free use
+SayIt leverages **Google Gemini 3** to power intelligent, context-aware conversations:
 
-This makes SayIt especially useful for people with conditions such as ALS, cerebral palsy, autism, stroke recovery, or temporary speech limitations.
+- **Smart Replies**: Gemini 3 generates natural, thoughtful responses based on conversation history
+- **Phrase Suggestions**: AI predicts the next phrase you want to say using your symbols and context
+- **Multi-turn Conversations**: Understands conversation flow and provides relevant, helpful responses
+- **Accessible Language**: Generates clear, concise replies suitable for users of all abilities
 
-✨ Key Features
-🧠 Pre-Built Phrase Library
+See [GEMINI_INTEGRATION.md](GEMINI_INTEGRATION.md) for detailed integration notes.
 
-Quickly communicate using commonly used phrases and expressions
+---
 
-Reduces the need for typing from scratch
+## 🛠️ Tech Stack
 
-🌐 Multilingual Support
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 18 + TypeScript, Vite, Tailwind CSS, shadcn/ui, Framer Motion |
+| **Backend/AI** | Google Generative AI (Gemini 3), Supabase Edge Functions |
+| **Accessibility** | Web Speech API, Head-Tracking (Human.js), ARIA labels |
+| **Deployment** | Vercel (frontend), Supabase (backend functions) |
 
-Speak in any language, including Nigerian and other global languages
+---
 
-Seamless switching between languages
+## 🚀 Getting Started
 
-🔊 Voice & Tone Customization
+### Prerequisites
+- Node.js 18+
+- npm or pnpm
+- Google Gemini API key (from [ai.google.dev](https://ai.google.dev))
 
-Change voice type
+### Installation
 
-Select tone (calm, casual, polite, expressive, etc.)
-
-Allows users to express how they feel, not just what they say
-
-🤖 Hands-Free Head & Facial Controls
-
-Move head up/down to navigate or scroll
-
-Turn head left/right to switch selections
-
-Open and close mouth to click or select buttons
-
-This allows full interaction without touching the screen.
-
-♿ Accessibility First
-
-SayIt is built with accessibility at its core:
-
-Hands-free navigation for users with limited motor control
-
-Audio-based communication for non-verbal users
-
-Language inclusivity for underserved communities
-
-🛠️ Tech Stack
-
-This project is built using modern web technologies:
-
-React
-
-TypeScript
-
-Vite
-
-Tailwind CSS
-
-shadcn/ui
-
-Google API
-
-🚀 Getting Started (Local Development)
-Prerequisites
-
-Node.js (v18+ recommended)
-
-npm
-
-Installation
+```bash
 # Clone the repository
 git clone https://github.com/Mimi77499/head-click-magic.git
-
-# Navigate into the project directory
 cd head-click-magic
 
 # Install dependencies
 npm install
 
-# Start the development server
+# Set up environment variables
+# Create .env.local and add:
+# VITE_GEMINI_API_KEY=your_gemini_api_key_here
+
+# Start dev server
 npm run dev
+```
 
+The app will be available at **http://localhost:8080** (or next available port).
 
-The app will be available at:
+---
 
-http://localhost:5173
+## 📦 Project Structure
 
-🌐 Deployment
+```
+src/
+├── pages/
+│   ├── AccessibleChat.tsx     # Main accessible chat UI (high-contrast, head-tracking)
+│   ├── SayIt.tsx              # Symbol-based AAC mode
+│   ├── Home.tsx               # Mode selector dashboard
+│   └── Landing.tsx            # Feature overview & usage scenarios
+├── components/
+│   ├── CollaborativeMode.tsx  # Real-time conversation chat
+│   ├── HeadTrackingOverlay.tsx # Eye-gaze UI overlay
+│   └── sayit/                 # Symbol grid, suggestions, tone selector, etc.
+├── integrations/
+│   └── gemini/
+│       ├── client.ts          # Gemini 3 client initialization
+│       ├── suggestions.ts     # AI suggestion & reply generation
+│       └── types.ts           # TypeScript types for structured replies
+└── hooks/
+    ├── useGeminiSuggestions.ts # Hook for phrase suggestions
+    ├── useSpeech.ts           # Text-to-speech & voice control
+    └── useHeadTracking.ts     # Head-tracking gesture detection
 
-This app can be deployed on platforms such as Vercel, Netlify, or any modern frontend hosting service.
+supabase/functions/gemini-proxy/  # Serverless function to proxy Gemini (keeps API key server-side)
+```
 
-Example (Vercel)
+---
 
-Push your code to GitHub
+## 🔐 Security
 
-Import the repository into Vercel
+- **API Key**: Stored server-side in Supabase Edge Functions; never exposed to the browser
+- **CORS**: Configured for secure cross-origin requests
+- **No User Data**: Conversations are not persisted by default (local storage only)
 
-Deploy with default settings
+---
 
-🧪 Usage Notes
+## 🌐 Deployment
 
-A camera is required for head and facial gesture detection
+### Deploy on Vercel
 
-Best used in well-lit environments
+```bash
+# 1. Push your code to GitHub
+git push
 
-Works on desktop and supported mobile browsers
+# 2. Import repository in Vercel dashboard
+# (https://vercel.com/import)
 
-📌 Use Cases
+# 3. Set environment variables in Vercel:
+#    VITE_GEMINI_API_KEY=your_key
 
-AAC communication for non-verbal users
+# 4. Deploy
+```
 
-Hands-free computer interaction
+### Deploy Supabase Functions
 
-Assistive technology for motor impairments
+```bash
+# Install Supabase CLI
+npm install -g supabase
 
-Multilingual communication support
+# Deploy the gemini-proxy function
+supabase functions deploy gemini-proxy --project <your-project-ref>
+```
 
-Accessibility-focused education tools
+See [DEPLOY_GEMINI_PROXY.md](DEPLOY_GEMINI_PROXY.md) for detailed instructions.
 
-🛣️ Future Improvements
+---
 
-Custom phrase creation by users
+## 📖 Usage Guide
+
+### AccessibleChat (Recommended for Maximum Accessibility)
+1. Click **"Accessible Chat"** on the home page
+2. Type a message, use voice input, or tap a quick-reply button
+3. Gemini 3 generates an intelligent response
+4. Responses are read aloud (if enabled)
+5. Adjust settings (text size, high contrast) as needed
+
+### Symbol-Based Mode (SayIt)
+1. Click **"Quick Message"** to build a message from symbols
+2. Select words/phrases from symbol categories
+3. Tone and language adjustments available
+4. AI enhancement can refine your message
+5. Speak the final message
+
+### Real Conversation (CollaborativeMode)
+1. Click **"Real Conversation"** to chat with someone
+2. They don't need the app — works with any messaging platform
+3. Full symbol grid + AI suggestions available
+4. Voice input supported
+
+---
+
+## ♿ Accessibility Features Checklist
+
+- ✅ Head-tracking eye-gaze control (hands-free)
+- ✅ Voice input (Web Speech API)
+- ✅ Voice output (Text-to-speech with 100+ voices)
+- ✅ High-contrast mode (black/white)
+- ✅ Large text options
+- ✅ Keyboard navigation
+- ✅ ARIA labels & semantic HTML
+- ✅ Screen-reader friendly
+- ✅ No flashing/animations in critical UI
+
+---
+
+## 🧪 Testing
+
+Run tests:
+```bash
+npm run test
+```
+
+Build for production:
+```bash
+npm run build
+```
+
+---
+
+## 📄 License
+
+MIT License — free to use, modify, and distribute.
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add feature'`)
+4. Push and open a Pull Request
+
+---
+
+## 📞 Support & Feedback
+
+- **Report bugs**: [GitHub Issues](https://github.com/Mimi77499/head-click-magic/issues)
+- **Suggest features**: Open a discussion or issue
+- **Email**: [contact info if available]
+
+---
+
+## 🎓 Resources
+
+- [Google Gemini 3 Documentation](https://ai.google.dev/docs)
+- [Web Accessibility Guidelines (WCAG 2.1)](https://www.w3.org/WAI/WCAG21/quickref/)
+- [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
+- [Augmentative and Alternative Communication](https://www.asha.org/public/hearing/aac/)
+
+---
+
+## 🙏 Acknowledgments
+
+Built for accessibility. Designed for everyone. Made with ❤️ for people with disabilities.
+
+**SayIt is a Gemini 3 hackathon submission.**
+
 
 Saved user profiles (voice, language, tone)
 
