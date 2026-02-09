@@ -2,7 +2,11 @@ import { ArrowRight, Volume2, Eye, MessageSquare, Globe, Users, Zap } from 'luci
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
-export default function Landing() {
+interface LandingProps {
+  onNavigate?: (mode: 'home' | 'sayit' | 'collaborative' | 'templates' | 'landing') => void;
+}
+
+export default function Landing({ onNavigate }: LandingProps) {
   const [selectedUseCase, setSelectedUseCase] = useState(0);
 
   const useCases = [
@@ -89,7 +93,7 @@ export default function Landing() {
           <nav className="hidden md:flex items-center gap-6">
             <a href="#features" className="text-gray-700 hover:text-orange-600 font-medium">Features</a>
             <a href="#usecases" className="text-gray-700 hover:text-orange-600 font-medium">Use Cases</a>
-            <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg">
+            <Button className="bg-gradient-to-r from-orange-500 to-red-500 text-white hover:shadow-lg" onClick={() => onNavigate?.('sayit')}>
               Try Now
             </Button>
           </nav>
@@ -117,12 +121,12 @@ export default function Landing() {
               Just want to connect? Perfect.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-lg h-14 px-8 hover:shadow-xl">
-                Start Free Now <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-              <Button size="lg" variant="outline" className="border-2 border-orange-400 text-orange-700 text-lg h-14 px-8">
-                Watch Demo
-              </Button>
+                <Button size="lg" className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-lg h-14 px-8 hover:shadow-xl" onClick={() => onNavigate?.('sayit')}>
+                  Start Free Now <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+                <Button size="lg" variant="outline" className="border-2 border-orange-400 text-orange-700 text-lg h-14 px-8" onClick={() => window.scrollTo({ top: document.body.scrollHeight/2, behavior: 'smooth' })}>
+                  Watch Demo
+                </Button>
             </div>
             <p className="text-sm text-gray-600 mt-6">✓ Free forever • ✓ No login needed to start • ✓ Share instantly with anyone</p>
           </div>
@@ -212,7 +216,7 @@ export default function Landing() {
           <p className="text-xl text-white/90 mb-8">
             Start communicating in real-time, right now. No sign-up needed.
           </p>
-          <Button size="lg" className="bg-white text-orange-600 hover:bg-gray-100 text-lg h-14 px-12 font-bold">
+          <Button size="lg" className="bg-white text-orange-600 hover:bg-gray-100 text-lg h-14 px-12 font-bold" onClick={() => onNavigate?.('sayit')}>
             Launch App <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>

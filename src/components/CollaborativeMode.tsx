@@ -4,6 +4,7 @@ import { Copy, Share2, RotateCcw, Settings, Calculator as CalcIcon, Mic, MicOff,
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calculator } from './Calculator';
+import { generateReply } from '@/integrations/gemini/suggestions';
 import { SymbolGrid } from './sayit/SymbolGrid';
 import { SuggestionsPanel } from './sayit/SuggestionsPanel';
 import { categories, getSymbolsByCategory, Symbol } from '@/data/symbolsData';
@@ -16,14 +17,18 @@ interface Message {
   text: string;
   timestamp: Date;
   isTemplate?: boolean;
+  action?: string | null;
+  confidence?: number;
 }
 
 interface CollaborativeModeProps {
   sessionId?: string;
   isHeadTrackingActive?: boolean;
+  initialMessage?: string | null;
+  onNavigate?: (mode: 'home' | 'sayit' | 'collaborative' | 'templates' | 'landing') => void;
 }
 
-export function CollaborativeMode({ sessionId = '', isHeadTrackingActive = false }: CollaborativeModeProps) {
+export function CollaborativeMode({ sessionId = '', isHeadTrackingActive = false, initialMessage = null, onNavigate }: CollaborativeModeProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [otherUserMessage, setOtherUserMessage] = useState('');
@@ -95,16 +100,30 @@ export function CollaborativeMode({ sessionId = '', isHeadTrackingActive = false
     setSelectedSymbols([]);
     toast.success('Suggestion added!');
   }, []);
-  const handleSimulateOtherMessage = useCallback((msg: string) => {
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      sender: 'other',
-      text: msg,
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, newMessage]);
-    setOtherUserMessage('');
-  }, []);
+  const handleSimulateOtherMessage = useCallback(async (msg: string) => {
+    // Use Gemini to generate a realistic, structured reply when possible
+    try {
+      const structured = await generateReply(msg, messages.map(m => ({ role: m.sender === 'user' ? 'user' : 'other', text: m.text })));
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        sender: 'other',
+        text: structured.reply || msg,
+        timestamp: new Date(),
+        action: structured.action ?? null,
+        confidence: structured.confidence ?? undefined,
+      };
+      setMessages(prev => [...prev, newMessage]);
+      setOtherUserMessage('');
+    } catch (err) {
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        sender: 'other',
+        text: 'Thanks for that! ' + msg,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, newMessage]);
+    }
+  }, [messages]);
 
   // Handle calculator value insertion
   const handleCalculatorInsert = useCallback((value: string) => {
@@ -124,11 +143,12 @@ export function CollaborativeMode({ sessionId = '', isHeadTrackingActive = false
     };
     
     setMessages(prev => [...prev, newMessage]);
+    const userText = currentMessage;
     setCurrentMessage('');
 
-    // Simulate a response
+    // Simulate a response to the user's actual message
     setTimeout(() => {
-      handleSimulateOtherMessage('Thanks for that! ' + currentMessage);
+      handleSimulateOtherMessage(userText);
     }, 1000);
   }, [currentMessage, handleSimulateOtherMessage]);
 
@@ -152,9 +172,12 @@ export function CollaborativeMode({ sessionId = '', isHeadTrackingActive = false
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-gradient-to-r from-primary to-secondary rounded-t-3xl p-4 text-white flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">💬 Conversation</h1>
-            <p className="text-sm text-white/80">{messages.length} messages</p>
+          <div className="flex items-center gap-4">
+            <button onClick={() => onNavigate?.('home')} className="p-2 bg-white/20 rounded-lg">Back</button>
+            <div>
+              <h1 className="text-2xl font-bold">💬 Conversation</h1>
+              <p className="text-sm text-white/80">{messages.length} messages</p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button
@@ -207,6 +230,12 @@ export function CollaborativeMode({ sessionId = '', isHeadTrackingActive = false
                     `}
                   >
                     <p className="font-medium">{msg.text}</p>
+                    {msg.action && (
+                      <p className="text-xs mt-1 text-indigo-600">Action: {msg.action}</p>
+                    )}
+                    {typeof msg.confidence === 'number' && (
+                      <p className="text-xs mt-1 text-gray-500">Confidence: {(msg.confidence * 100).toFixed(0)}%</p>
+                    )}
                     <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-white/70' : 'text-gray-600'}`}>
                       {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
@@ -277,7 +306,12 @@ export function CollaborativeMode({ sessionId = '', isHeadTrackingActive = false
             <SuggestionsPanel
               suggestions={suggestions}
               isLoading={isSuggestionsLoading}
-              onSuggestionClick={handleSuggestionClick}
+              onInsertSuggestion={(text) => handleSuggestionClick(text)}
+              onStartChatSuggestion={(text) => {
+                // send immediately as a message
+                setCurrentMessage(text);
+                handleSendMessage();
+              }}
             />
           </div>
         )}

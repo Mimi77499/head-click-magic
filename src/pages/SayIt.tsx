@@ -26,7 +26,12 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
 }
 
-export default function SayIt() {
+interface SayItProps {
+  onStartChat?: (message: string) => void;
+  onNavigate?: (mode: 'sayit' | 'collaborative' | 'templates' | 'landing') => void;
+}
+
+export default function SayIt({ onStartChat, onNavigate }: SayItProps) {
   const [activeCategory, setActiveCategory] = useState('phrases');
   const [selectedSymbols, setSelectedSymbols] = useState<Symbol[]>([]);
   const [enhancedText, setEnhancedText] = useState<string>('');
@@ -213,6 +218,7 @@ export default function SayIt() {
         isHeadTrackingActive={isHeadTrackingActive}
         onVoiceClick={() => setVoiceDialogOpen(true)}
         currentVoice={selectedVoice?.name?.replace(/Microsoft |Google |Apple /, '').slice(0, 15) || 'Voice'}
+        onBack={() => onNavigate?.('home')}
       />
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
@@ -240,7 +246,13 @@ export default function SayIt() {
           <SuggestionsPanel
             suggestions={suggestions}
             isLoading={isSuggestionsLoading}
-            onSuggestionClick={handleSuggestionClick}
+            onInsertSuggestion={(text) => { handleSuggestionClick(text); }}
+            onStartChatSuggestion={(text) => {
+              // Insert into message builder and optionally jump to chat
+              setEnhancedText(text);
+              toast.success('Starting chat...');
+              if (onStartChat) onStartChat(text);
+            }}
           />
         </div>
 

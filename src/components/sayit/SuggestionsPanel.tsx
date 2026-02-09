@@ -6,13 +6,15 @@ import { Suggestion } from '@/integrations/gemini/suggestions';
 interface SuggestionsPanelProps {
   suggestions: Suggestion[];
   isLoading: boolean;
-  onSuggestionClick: (text: string) => void;
+  onInsertSuggestion: (text: string) => void;
+  onStartChatSuggestion: (text: string) => void;
 }
 
 export function SuggestionsPanel({
   suggestions,
   isLoading,
-  onSuggestionClick,
+  onInsertSuggestion,
+  onStartChatSuggestion,
 }: SuggestionsPanelProps) {
   if (!isLoading && suggestions.length === 0) {
     return null;
@@ -37,25 +39,31 @@ export function SuggestionsPanel({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {suggestions.map((suggestion, idx) => (
-              <Button
-                key={idx}
-                variant="outline"
-                onClick={() => onSuggestionClick(suggestion.text)}
-                className="justify-start text-left h-auto py-3 px-4 border-orange-300 border-2 hover:border-orange-500 hover:bg-gradient-to-r hover:from-orange-100 to-amber-100 hover:shadow-md transition-all duration-200 group"
-                title={suggestion.reason}
-              >
+              <div key={idx} className="flex gap-2">
                 <div className="flex-1">
-                  <span className="text-sm font-semibold text-orange-900 group-hover:text-orange-700 block truncate">
-                    {suggestion.text}
-                  </span>
-                  <span className="text-xs text-orange-600/70 group-hover:text-orange-600">
-                    {suggestion.reason}
-                  </span>
+                  <Button
+                    variant="outline"
+                    onClick={() => onInsertSuggestion(suggestion.text)}
+                    className="w-full justify-start text-left h-auto py-3 px-4 border-orange-300 border-2 hover:border-orange-500 hover:bg-gradient-to-r hover:from-orange-100 to-amber-100 hover:shadow-md transition-all duration-200 group"
+                    title={suggestion.reason}
+                  >
+                    <div className="flex-1">
+                      <span className="text-sm font-semibold text-orange-900 group-hover:text-orange-700 block truncate">
+                        {suggestion.text}
+                      </span>
+                      <span className="text-xs text-orange-600/70 group-hover:text-orange-600">
+                        {suggestion.reason}
+                      </span>
+                    </div>
+                    <span className="ml-2 text-xs font-bold bg-orange-400/20 px-2.5 py-1 rounded-lg text-orange-700 group-hover:bg-orange-400/40">
+                      {(suggestion.confidence * 100).toFixed(0)}%
+                    </span>
+                  </Button>
                 </div>
-                <span className="ml-2 text-xs font-bold bg-orange-400/20 px-2.5 py-1 rounded-lg text-orange-700 group-hover:bg-orange-400/40">
-                  {(suggestion.confidence * 100).toFixed(0)}%
-                </span>
-              </Button>
+                <div className="flex flex-col gap-2">
+                  <Button size="sm" onClick={() => onStartChatSuggestion(suggestion.text)} className="bg-orange-500 text-white px-3 py-2 rounded-md">Send</Button>
+                </div>
+              </div>
             ))}
           </div>
         )}

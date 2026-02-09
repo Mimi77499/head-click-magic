@@ -7,6 +7,7 @@ import { useState } from "react";
 import SayIt from "./pages/SayIt";
 import Home from "./pages/Home";
 import Landing from "./pages/Landing";
+import AccessibleChat from "./pages/AccessibleChat";
 import NotFound from "./pages/NotFound";
 import { CollaborativeMode } from "./components/CollaborativeMode";
 import { TemplatesSelector } from "./components/TemplatesSelector";
@@ -14,15 +15,21 @@ import { TemplatesSelector } from "./components/TemplatesSelector";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [currentMode, setCurrentMode] = useState<'home' | 'sayit' | 'collaborative' | 'templates' | 'landing'>('home');
+  const [currentMode, setCurrentMode] = useState<'home' | 'sayit' | 'collaborative' | 'templates' | 'landing' | 'accessible-chat'>('home');
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [collaborativeInitialMessage, setCollaborativeInitialMessage] = useState<string | null>(null);
 
-  const handleSelectMode = (mode: 'sayit' | 'collaborative' | 'templates' | 'landing') => {
+  const handleSelectMode = (mode: 'sayit' | 'collaborative' | 'templates' | 'landing' | 'accessible-chat') => {
     setCurrentMode(mode);
   };
 
   const handleSelectTemplate = (template: any) => {
     setSelectedTemplate(template);
+    setCurrentMode('collaborative');
+  };
+
+  const handleStartChatWithMessage = (message: string) => {
+    setCollaborativeInitialMessage(message);
     setCurrentMode('collaborative');
   };
 
@@ -39,13 +46,15 @@ const App = () => {
                 currentMode === 'home' ? (
                   <Home onSelectMode={handleSelectMode} />
                 ) : currentMode === 'sayit' ? (
-                  <SayIt />
+                  <SayIt onStartChat={handleStartChatWithMessage} onNavigate={handleSelectMode} />
                 ) : currentMode === 'collaborative' ? (
-                  <CollaborativeMode isHeadTrackingActive={false} />
+                  <CollaborativeMode isHeadTrackingActive={false} initialMessage={collaborativeInitialMessage} onNavigate={handleSelectMode} />
                 ) : currentMode === 'templates' ? (
                   <TemplatesSelector onSelectTemplate={handleSelectTemplate} />
                 ) : currentMode === 'landing' ? (
-                  <Landing />
+                  <Landing onNavigate={handleSelectMode} />
+                ) : currentMode === 'accessible-chat' ? (
+                  <AccessibleChat onNavigate={handleSelectMode} />
                 ) : (
                   <Home onSelectMode={handleSelectMode} />
                 )

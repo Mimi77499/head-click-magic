@@ -7,4 +7,5 @@ if (!apiKey) {
 }
 
 const genAI = new GoogleGenerativeAI(apiKey);
-export const geminiModel = genAI.getGenerativeModel({ model: 'gemini-pro' });
+// Use explicit Gemini 3 model to match hackathon requirements
+export const geminiModel = genAI.getGenerativeModel({ model: 'gemini-3-pro' });

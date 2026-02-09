@@ -4,7 +4,7 @@ import { Zap, MessageSquare, BookOpen, Sparkles, BarChart3 } from 'lucide-react'
 import { motion } from 'framer-motion';
 
 interface HomePageProps {
-  onSelectMode: (mode: 'sayit' | 'collaborative' | 'templates' | 'landing') => void;
+  onSelectMode: (mode: 'sayit' | 'collaborative' | 'templates' | 'landing' | 'accessible-chat') => void;
 }
 
 function HomePage({ onSelectMode }: HomePageProps) {
@@ -40,6 +40,16 @@ function HomePage({ onSelectMode }: HomePageProps) {
       color: 'from-purple-500 to-pink-500',
       accessibility: 'Step-by-step • Suggested phrases • Auto-responses',
       use: 'When you need help structuring a conversation'
+    },
+    {
+      id: 'accessible-chat',
+      title: 'Accessible Chat',
+      emoji: '♿',
+      description: 'Simple, high-contrast chat with head tracking & voice input',
+      icon: <MessageSquare className="w-8 h-8" />,
+      color: 'from-indigo-500 to-purple-500',
+      accessibility: 'High contrast • Large text • Head tracking • Voice input',
+      use: 'When you need maximum accessibility & simplicity'
     }
   ];
 
@@ -101,7 +111,7 @@ function HomePage({ onSelectMode }: HomePageProps) {
               className="group"
             >
               <button
-                onClick={() => onSelectMode(mode.id as 'sayit' | 'collaborative' | 'templates')}
+                onClick={() => onSelectMode(mode.id as 'sayit' | 'collaborative' | 'templates' | 'accessible-chat')}
                 className="
                   w-full h-full bg-white border-3 border-orange-200 rounded-3xl p-8
                   hover:border-orange-500 hover:shadow-2xl transition-all duration-300

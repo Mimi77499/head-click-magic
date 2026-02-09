@@ -1,4 +1,4 @@
-import { Settings, History, Eye, Volume2, MessageSquare } from 'lucide-react';
+import { Settings, History, Eye, Volume2, MessageSquare, ArrowLeft } from 'lucide-react';
 
 interface HeaderProps {
   onSettingsClick: () => void;
@@ -7,6 +7,7 @@ interface HeaderProps {
   isHeadTrackingActive: boolean;
   onVoiceClick?: () => void;
   currentVoice?: string;
+  onBack?: () => void;
 }
 
 export function Header({
@@ -15,13 +16,19 @@ export function Header({
   onHeadTrackingClick,
   isHeadTrackingActive,
   onVoiceClick,
-  currentVoice = 'Voice'
+  currentVoice = 'Voice',
+  onBack
 }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-gradient-to-r from-primary via-secondary to-accent shadow-lg border-b-4 border-primary/30">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         {/* Logo & Branding */}
         <div className="flex items-center gap-3">
+          {onBack && (
+            <button onClick={onBack} className="mr-3 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white" title="Back">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
           <div className="p-2 bg-white/20 rounded-xl backdrop-blur">
             <MessageSquare className="w-6 h-6 text-white" />
           </div>
